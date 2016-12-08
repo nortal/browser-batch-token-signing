@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 			<Directory Id="APPLICATIONFOLDER" Name="Firefox Token Signing Plugin Mass">
 				<Component Id="Application" Guid="1557B20B-874D-41FF-BC2A-CB52AACB2937">
 					<File Source="C:\OpenSSL-Win32\bin\libeay32.dll"/>
-					<File Source="$(var.SolutionDir)Release\npesteid-firefox-plugin.dll"/>
+					<File Source="$(var.SolutionDir)$(var.Configuration)\npesteid-firefox-plugin.dll"/>
 					<RegistryValue Root='HKLM' Type='string' Value='[APPLICATIONFOLDER]npesteid-firefox-plugin.dll'
 						Key='Software\MozillaPlugins\@NORTAL/esteid-firefox-plugin-mass' Name="Path" Action="write"/>
 				</Component>
@@ -49,7 +49,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 			<Directory Id="APPLICATION64FOLDER" Name="Firefox Token Signing Plugin Mass">		
 				<Component Id="Application64" Guid="{C3773B13-1E17-4BD8-9FE4-DC6367B0D51C}" Win64="yes">	
 					<File Source="C:\OpenSSL-Win64\bin\libeay32.dll" Id="libeay32_x64.dll"/>				
-					<File Source="$(var.SolutionDir)x64\Release\npesteid-firefox-plugin.dll" Id="npesteid_firefox_plugin64.dll" KeyPath="yes" Name="npesteid-firefox-plugin64.dll"/>	
+					<File Source="$(var.SolutionDir)x64\$(var.Configuration)\npesteid-firefox-plugin.dll" Id="npesteid_firefox_plugin64.dll" KeyPath="yes" Name="npesteid-firefox-plugin64.dll"/>	
 					<RegistryValue Root="HKLM" Key="Software\MozillaPlugins\@NORTAL/esteid-firefox-plugin-mass" Name="Path"
                        Value="[APPLICATION64FOLDER]npesteid-firefox-plugin64.dll" Type="string" Action="write"/>					
 				</Component>
