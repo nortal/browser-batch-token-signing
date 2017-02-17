@@ -649,7 +649,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AtrFetcher.cpp" />
     <ClCompile Include="CertificateSelectorFactory.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="esteid-plugin-ie.cpp" />
@@ -665,6 +664,7 @@
     <ClCompile Include="PinDialog.cpp" />
     <ClCompile Include="PinDialogCNG.cpp" />
     <ClCompile Include="PKCS11CertificateSelector.cpp" />
+    <ClCompile Include="PKCS11Path.cpp" />
     <ClCompile Include="PKCS11Signer.cpp" />
     <ClCompile Include="ProgressBar.cpp" />
     <ClCompile Include="SignerFactory.cpp" />
@@ -681,7 +681,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\esteid_map.h" />
-    <ClInclude Include="AtrFetcher.h" />
     <ClInclude Include="BinaryUtils.h" />
     <ClInclude Include="CertificateSelector.h" />
     <ClInclude Include="CertificateSelectorFactory.h" />
@@ -698,7 +697,7 @@
     <ClInclude Include="PinDialog.h" />
     <ClInclude Include="PKCS11CardManager.h" />
     <ClInclude Include="PKCS11CertificateSelector.h" />
-    <ClInclude Include="PKCS11ModulePath.h" />
+    <ClInclude Include="PKCS11Path.h" />
     <ClInclude Include="PKCS11Signer.h" />
     <ClInclude Include="ProgressBar.h" />
     <ClInclude Include="Resource.h" />
