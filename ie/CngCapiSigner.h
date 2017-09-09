@@ -1,5 +1,5 @@
 /*
-* Estonian ID card plugin for web browsers
+* Chrome Token Signing Native Host
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -19,20 +19,13 @@
 #pragma once
 
 #include "Signer.h"
-#include <Windows.h>
-#include <ncrypt.h>
-#include <WinCrypt.h>
-#include <cryptuiapi.h>
 
 class CngCapiSigner : public Signer {
 public:
-	CngCapiSigner(const string &_hash, char *_certId, PCCERT_CONTEXT _certContext) : Signer(_hash, _certId) {
-		certContext = _certContext;
-	}
-	string sign();
+	CngCapiSigner(const std::string &certInHex) : Signer(certInHex) {}
+	std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) override;
   NCRYPT_KEY_HANDLE getCertificatePrivateKey(BOOL* freeKeyHandle);
 
 private:
   SECURITY_STATUS setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key);
-	PCCERT_CONTEXT certContext;
 };

@@ -72,7 +72,7 @@ void CPinDialogCNG::releaseDialog() {
 
 LRESULT CPinDialogCNG::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
   CString rawPin;
-  GetDlgItem(IDC_PIN_ENTRY).GetWindowText(rawPin);
+  //GetDlgItem(IDC_PIN_FIELD).GetWindowText(rawPin);
 
   // Check PIN length, do not return if zero.
   int len = rawPin.GetLength();
@@ -113,7 +113,7 @@ LRESULT CPinDialogCNG::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOO
 }
 
 LRESULT CPinDialogCNG::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
-  EstEID_log("CNG mass signing failed to ask PIN, user canceled.");
+  _log("CNG mass signing failed to ask PIN, user canceled.");
   //handleErrorWithCode(SCARD_W_CANCELLED_BY_USER, "AskPIN", m_pluginObj);
   
   EndDialog(wID);
@@ -139,18 +139,18 @@ int CPinDialogCNG::setAndCheckPIN(void) {
     // check the result
     if (m_status == SCARD_W_WRONG_CHV) {
       // 0x8010006b: wrong pin
-      EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY): Wrong PIN.\n", m_status);
+      _log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY): Wrong PIN.\n", m_status);
       this->setInvalidPin(true);
       s_pin = "";  // reset stored pin
     }
     else if (m_status == SCARD_W_CHV_BLOCKED) {
       // 0x8010006c: card is blocked
-      EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY): Card blocked.\n", m_status);
+      _log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY): Card blocked.\n", m_status);
     }
     else if (m_status != ERROR_SUCCESS)
     {
       // other error
-      EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY).\n", m_status);
+      _log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY).\n", m_status);
     }
   }
   else {

@@ -18,12 +18,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 -->
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Name="IE Token Signing Plugin Mass" UpgradeCode="65F43A02-6898-4547-BB5F-39F7F6ED9A02" Id="*" Language="1033" Version="$(var.VERSION)" Codepage="1251" Manufacturer="NORTAL">
-		<Package Keywords="Installer" Platform="$(var.Platform)" InstallerVersion="405" Compressed="yes" InstallPrivileges="elevated" InstallScope="perMachine"/>
+	<Product Name="IE Token Signing Plugin Mass" UpgradeCode="65F43A02-6898-4547-BB5F-39F7F6ED9A02" Id="*"
+			Language="1033" Version="$(var.VERSION)" Codepage="1251" Manufacturer="Nortal">
+		<Package Keywords="Installer" Platform="$(var.Platform)" InstallerVersion="405"
+			Compressed="yes" InstallPrivileges="elevated" InstallScope="perMachine"/>
 		<MediaTemplate EmbedCab="yes" CompressionLevel="high"/>
 		<Icon Id="Icon.ico" SourceFile="$(var.SolutionDir)media/ID.ico"/>
-	<Property Id="ARPPRODUCTICON" Value="Icon.ico"/>
-	<MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage=
+		<Property Id="ARPPRODUCTICON" Value="Icon.ico"/>
+		<MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage=
 		"A newer version of [ProductName] is already installed. If you are trying to downgrade, please uninstall the newer version first."/>
 		<Condition Message="[ProductName] requires Windows 7 or higher.">
 		  <![CDATA[Installed OR (VersionNT >= 601)]]>
@@ -32,7 +34,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 		<Directory Id="TARGETDIR" Name="SourceDir">
 			<Directory Id='ProgramFilesFolder'>
-				<Directory Id="APPLICATIONFOLDER" Name="IE Token Signing Plugin Mass">					
+				<Directory Id="APPLICATIONFOLDER" Name="IE Token Signing Plugin Mass">
 					<Component Id="Application" Guid="{E37C9303-6233-4913-90D0-BCA5995D5560}" Win64="no">
 						<AppId Description="IE plugin for Estonian ID Card Mass signing" Id="94F9C9B6-1636-4CFD-B4CC-507DFBA963A5"/>
 						<File Source="$(var.SolutionDir)$(var.Configuration)\esteid-plugin-ie.dll" Id="esteid_plugin_ie.dll" KeyPath="yes" Name="esteid-plugin-ie.dll">
@@ -52,19 +54,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 							</TypeLib>
 						</File>
 						<ProgId Id="MIME"/>
-            
-						<RegistryValue Root="HKCR" Key="AppID\esteid-plugin-ie.DLL" Name="AppID" Value="{94F9C9B6-1636-4CFD-B4CC-507DFBA963A5}" Type="string" Action="write"/>
-						<RegistryValue Root="HKCR" Key="MIME\Database\Content Type\application/x-digidoc-mass" Name="CLSID" Value="{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Type="string" Action="write"/>
-						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Value="EstEIDIEPluginBHO" Type="string" Action="write"/>
-						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Name="NoExplorer" Value="1" Type="integer" Action="write"/>
-						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Ext\PreApproved\{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Value="EstEIDIEPluginBHO" Type="string" Action="write"/>
-						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Ext\PreApproved\{8C8D4FAA-A3FE-414C-ADD0-7B1A04893BF3}" Value="EstEIDIEPluginBHO" Type="string" Action="write"/>
+						<RegistryValue Root="HKCR" Key="AppID\esteid-plugin-ie.DLL" Name="AppID" Value="{94F9C9B6-1636-4CFD-B4CC-507DFBA963A5}" Type="string"/>
+						<RegistryValue Root="HKCR" Key="MIME\Database\Content Type\application/x-digidoc-mass" Name="CLSID" Value="{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Type="string"/>
+						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Value="EstEIDIEPluginBHO" Type="string"/>
+						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Name="NoExplorer" Value="1" Type="integer"/>
+						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Ext\PreApproved\{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Value="EstEIDIEPluginBHO" Type="string"/>
+						<RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Ext\PreApproved\{8C8D4FAA-A3FE-414C-ADD0-7B1A04893BF3}" Value="EstEIDIEPluginBHO" Type="string"/>
 
-						<RegistryKey Root="HKLM" Key="SOFTWARE\Classes\CLSID\{880A49C2-E366-45A9-902B-2FBFA537FB8F}\Implemented Categories\{F2D868ED-13AA-4FDF-A6D1-095321DB814F}" Action="createAndRemoveOnUninstall"/>
-						<RegistryKey Root="HKLM" Key="SOFTWARE\Classes\CLSID\{880A49C2-E366-45A9-902B-2FBFA537FB8F}\Implemented Categories\{B876CE24-EFBE-4209-8DA8-935FF717F26E}" Action="createAndRemoveOnUninstall"/>
-						<RegistryKey Root="HKCR" Key="CLSID\{880A49C2-E366-45A9-902B-2FBFA537FB8F}\Implemented Categories\{B876CE24-EFBE-4209-8DA8-935FF717F26E}" Action="createAndRemoveOnUninstall"/>
-						<RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext\CLSID" Action="create"/>
-						<RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext\CLSID" Name="{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Value="1" Action="write" Type="string"/>
+						<RegistryKey Root="HKLM" Key="SOFTWARE\Classes\CLSID\{880A49C2-E366-45A9-902B-2FBFA537FB8F}\Implemented Categories\{F2D868ED-13AA-4FDF-A6D1-095321DB814F}" ForceCreateOnInstall="yes"/>
+						<RegistryKey Root="HKLM" Key="SOFTWARE\Classes\CLSID\{880A49C2-E366-45A9-902B-2FBFA537FB8F}\Implemented Categories\{B876CE24-EFBE-4209-8DA8-935FF717F26E}" ForceCreateOnInstall="yes"/>
+						<RegistryKey Root="HKCR" Key="CLSID\{880A49C2-E366-45A9-902B-2FBFA537FB8F}\Implemented Categories\{B876CE24-EFBE-4209-8DA8-935FF717F26E}" ForceCreateOnInstall="yes"/>
+						<RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext\CLSID" Name="{880A49C2-E366-45A9-902B-2FBFA537FB8F}" Value="1" Type="string"/>
 					</Component>
 				</Directory>
 			</Directory>

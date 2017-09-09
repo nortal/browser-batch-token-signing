@@ -1,5 +1,5 @@
 /*
-* Estonian ID card plugin for web browsers
+* Chrome Token Signing Native Host
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -16,16 +16,20 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "HostExceptions.h"
 #include "PinDialog.h"
-extern "C" {
-#include "esteid_log.h"
-}
+#include <afxdialogex.h>
 
-int CPinDialog::attemptsRemaining = 3;
-bool CPinDialog::invalidPin = false;
+#include "Labels.h"
 
-std::wstring CPinDialog::getWrongPinErrorMessage() {
+#define _L(KEY) Labels::l10n.get(KEY).c_str()
+
+IMPLEMENT_DYNAMIC(PinDialog, CDialog)
+
+BEGIN_MESSAGE_MAP(PinDialog, CDialog)
+	ON_BN_CLICKED(IDOK, &PinDialog::OnBnClickedOk)
+END_MESSAGE_MAP()
+
+std::wstring PinDialog::getWrongPinErrorMessage() {
 	if (attemptsRemaining <= 0) {
 		return L"PIN sisestati kolm korda valesti. PIN blokeeritud!";
 	}
@@ -53,71 +57,49 @@ std::wstring CPinDialog::getWrongPinErrorMessage() {
 
 	return msg;
 }
-std::wstring CPinDialog::getEmptyPinErrorMessage() {
+
+std::wstring PinDialog::getEmptyPinErrorMessage() {
 	return L"PIN on kohustuslik.";
 }
 
-std::wstring CPinDialog::getShortPinErrorMessage() {
-	return L"PIN peab olema 5 numbrit.";
+void PinDialog::OnBnClickedOk() {
+	CString rawPin;
+	GetDlgItem(IDC_PIN_FIELD)->GetWindowText(rawPin);
+	pin = _strdup(ATL::CT2CA(rawPin));
+	CDialog::OnOK();
 }
 
-char * CPinDialog::getPin() {
-
-	INT_PTR nResponse = DoModal();
-	if (attemptsRemaining <= 0) {
-		EstEID_log("Pin blokeeritud");
-		throw PinBlockedException();
-	}
-
-	if (nResponse == IDOK) {
-		return pin;
-	}
-	else {
-		EstEID_log("Kasutaja katkestas.");
-		throw UserCancelledException();
-	}
+BOOL PinDialog::OnInitDialog()
+{
+	BOOL result = CDialog::OnInitDialog();
+	GetDlgItem(IDC_PIN_MESSAGE)->SetWindowText(label.c_str());
+	GetDlgItem(IDCANCEL)->SetWindowText(_L("cancel"));
+	return result;
 }
 
-int CPinDialog::getPin(char * pinOut, int pinLen) {
-  // pinLen is not supposed to contain ending NUL!
-  // Buffer pointed to by pinOut must be at least pinlen+1 characters long!
-
-  INT_PTR nResponse = DoModal();
-  if (attemptsRemaining <= 0) {
-	  EstEID_log("PIN blokeeritud.");
-    nResponse = PIN_ERROR_BLOCKED;
-  }
-
-  if (nResponse == IDOK) {
-    strncpy(pinOut, pin, pinLen);
-    pinOut[pinLen] = '\0';
-  }
-  else if (nResponse == IDCANCEL) {
-	  EstEID_log("Kasutaja katkestas.");
-  }
-  else if (nResponse == PIN_ERROR_BLOCKED) {
-	  EstEID_log("PIN blokeeritud.");
-  }
-  else if (nResponse < 0) {
-    // Failed to create the dialog, error will be returned. Should not happen.
-    EstEID_log("Failed to create PIN dialog, error: %d.", nResponse);
-  }
-
-  return nResponse;
+char* PinDialog::getPin() {
+	return pin;
 }
 
-void CPinDialog::setAttemptsRemaining(int _attemptsRemaining) {
+void PinDialog::setAttemptsRemaining(int _attemptsRemaining) {
 	attemptsRemaining = _attemptsRemaining;
 }
 
-int CPinDialog::getAttemptsRemaining() {
-  return attemptsRemaining;
-}
-
-void CPinDialog::setInvalidPin(bool wasPinInvalid) {
+void PinDialog::setInvalidPin(bool wasPinInvalid) {
   invalidPin = wasPinInvalid;
   if (wasPinInvalid) {
     attemptsRemaining--;
   }
-  updateControls();
+  //updateControls();
 }
+
+// common controls
+#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_IA64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='ia64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
