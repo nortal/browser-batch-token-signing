@@ -35,13 +35,12 @@ public:
   virtual NCRYPT_KEY_HANDLE getCertificatePrivateKey(BOOL* freeKeyHandle) { return NULL; }
   //virtual ULONG_PTR getCertificatePrivateKey(BOOL* freeKeyHandle) { return NULL; }
 
-	static Signer* createSigner(const std::string &cert);
-	std::string getCertInHex() const { return certInHex; }
+	static Signer* createSigner(const std::vector<unsigned char> &cert);
 	bool showInfo(const std::string &msg);
 	virtual std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) = 0;
 
 protected:
-	Signer(const std::string &_certInHex): certInHex(_certInHex) {}
+	Signer(const std::vector<unsigned char> &_cert) : cert(_cert) {}
 
   void setPin(std::string _pin) {
     pin = _pin;
@@ -87,4 +86,5 @@ protected:
 
 private:
 	std::string certInHex;
+	std::vector<unsigned char> cert;
 };

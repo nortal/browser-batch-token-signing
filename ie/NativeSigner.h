@@ -20,9 +20,9 @@
 
 #include "Signer.h"
 
-class CngCapiSigner : public Signer {
+class NativeSigner : public Signer {
 public:
-	CngCapiSigner(const std::string &certInHex) : Signer(certInHex) {}
+	NativeSigner(const std::vector<unsigned char> &cert) : Signer(cert) {}
 	std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) override;
   NCRYPT_KEY_HANDLE getCertificatePrivateKey(BOOL* freeKeyHandle);
 
