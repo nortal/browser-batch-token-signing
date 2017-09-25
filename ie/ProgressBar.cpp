@@ -60,7 +60,7 @@ LRESULT CProgressBarDialog::OnUpdateProgress(UINT uMsg, WPARAM wParam, LPARAM lP
 }
 
 LRESULT CProgressBarDialog::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
-  EstEID_log("User canceled while signing hash %d of %d.", m_currentItem, m_numberOfItems);
+  _log("User canceled while signing hash %d of %d.", m_currentItem, m_numberOfItems);
   cancelSigning = true;
   DestroyWindow();
   return 0;

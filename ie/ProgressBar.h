@@ -17,15 +17,13 @@
 */
 #pragma once
 
+#include "Logger.h"
 #include "resource.h"
 #include <atlbase.h>
 #include <atlhost.h>
 #include <atlstr.h>
 #include <atlctl.h>
 #include <string>
-extern "C" {
-#include "esteid_log.h"
-}
 
 using namespace ATL;
 

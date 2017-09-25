@@ -86,7 +86,7 @@ STDMETHODIMP CEstEIDIEPluginBHO::SetSite(IUnknown* pUnkSite) {
 }
 
 STDMETHODIMP CEstEIDIEPluginBHO::get_multipleHashesSupported(BSTR *result) {
-  EstEID_log("");
+  _log("");
   *result = _bstr_t("true").Detach();
   return S_OK;
 }
