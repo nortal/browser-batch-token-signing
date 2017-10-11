@@ -2,6 +2,9 @@
 //
 #include "resource.h"
 
+#define VER_STR_HELPER(x)       #x
+#define VER_STR(x)              VER_STR_HELPER(x)
+
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -75,12 +78,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Nortal"
             VALUE "FileDescription", "Estonian ID card plugin for mass signing"
-            VALUE "FileVersion", "1.0.0.0"
+            VALUE "FileVersion", VER_STR(MAJOR_VER.MINOR_VER.RELEASE_VER.BUILD_VER)
             VALUE "LegalCopyright", "(c) Nortal.  All rights reserved."
             VALUE "InternalName", "esteid-plugin-ie.dll"
             VALUE "OriginalFilename", "esteid-plugin-ie.dll"
             VALUE "ProductName", "Estonian ID card plugin for mass signing"
-            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "ProductVersion", VER_STR(MAJOR_VER.MINOR_VER.RELEASE_VER.BUILD_VER)
         END
     END
     BLOCK "VarFileInfo"

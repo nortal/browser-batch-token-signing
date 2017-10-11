@@ -24,7 +24,7 @@ class NativeSigner : public Signer {
 public:
 	NativeSigner(const std::vector<unsigned char> &cert) : Signer(cert) {}
 	std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) override;
-  NCRYPT_KEY_HANDLE getCertificatePrivateKey(BOOL* freeKeyHandle);
+	NCRYPT_KEY_HANDLE getCertificatePrivateKey(const std::vector<unsigned char> &digest, BOOL* freeKeyHandle);
 
 private:
   SECURITY_STATUS setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key);

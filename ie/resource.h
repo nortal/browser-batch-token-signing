@@ -2,9 +2,6 @@
 // Microsoft Visual C++ generated include file.
 // Used by esteid-plugin-ie.rc
 //
-#define MINOR_VER                       0
-#define RELEASE_VER                     1
-#define MAJOR_VER                       1
 #define IDR_ESTEIDPLUGINIE              101
 #define IDR_ESTEIDIEPLUGINBHO           102
 #define IDR_ESTEIDCERTIFICATE           103
@@ -28,13 +25,13 @@
 #endif
 
 #ifndef MAJOR_VER
-#define MAJOR_VER 3
+#define MAJOR_VER 1
 #endif
 #ifndef MINOR_VER
-#define MINOR_VER 13
+#define MINOR_VER 0
 #endif
 #ifndef RELEASE_VER
-#define RELEASE_VER 0
+#define RELEASE_VER 1
 #endif
 #ifndef BUILD_VER
 #define BUILD_VER 0

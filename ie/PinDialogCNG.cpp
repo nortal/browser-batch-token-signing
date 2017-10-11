@@ -19,6 +19,7 @@
 #include <string>
 #include "HostExceptions.h"
 #include "PinDialog.h"
+#include <atlstr.h>
 
 CPinDialogCNG* CPinDialogCNG::s_dialog = NULL;
 std::string CPinDialogCNG::s_pin = "";
@@ -72,7 +73,7 @@ void CPinDialogCNG::releaseDialog() {
 
 LRESULT CPinDialogCNG::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
   CString rawPin;
-  //GetDlgItem(IDC_PIN_FIELD).GetWindowText(rawPin);
+  GetDlgItem(IDC_PIN_FIELD).GetWindowText(rawPin);
 
   // Check PIN length, do not return if zero.
   int len = rawPin.GetLength();

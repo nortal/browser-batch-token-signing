@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "stdafx.h"
+
+#include "BinaryUtils.h"
 #include "NativeSigner.h"
 #include "HostExceptions.h"
 #include "Logger.h"
@@ -30,7 +33,7 @@
 
 using namespace std;
 
-SECURITY_STATUS CngCapiSigner::setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key) {
+SECURITY_STATUS NativeSigner::setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key) {
   SECURITY_STATUS st = ERROR_SUCCESS;
 
   //// If we have already asked the PIN,
@@ -63,10 +66,9 @@ SECURITY_STATUS CngCapiSigner::setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE 
   return st;
 }
 
-NCRYPT_KEY_HANDLE CngCapiSigner::getCertificatePrivateKey(BOOL* freeKeyHandle) {
+NCRYPT_KEY_HANDLE NativeSigner::getCertificatePrivateKey(const vector<unsigned char> &digest, BOOL* freeKeyHandle) {
   BCRYPT_PKCS1_PADDING_INFO padInfo;
   DWORD obtainKeyStrategy = CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG;
-  vector<unsigned char> digest = BinaryUtils::hex2bin(getHash()->c_str());
 
   ALG_ID alg = 0;
 
@@ -105,7 +107,15 @@ NCRYPT_KEY_HANDLE CngCapiSigner::getCertificatePrivateKey(BOOL* freeKeyHandle) {
   //BOOL freeKeyHandle = false;
   HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key = NULL;
   BOOL gotKey = true;
-  gotKey = CryptAcquireCertificatePrivateKey(certContext, flags, 0, &key, &spec, freeKeyHandle);
+	HCERTSTORE store = CertOpenStore(CERT_STORE_PROV_SYSTEM,
+	X509_ASN_ENCODING, 0, CERT_SYSTEM_STORE_CURRENT_USER | CERT_STORE_READONLY_FLAG, L"MY");
+	if (!store)
+		throw TechnicalException("Failed to open Cert Store");
+
+	vector<unsigned char> cert = BinaryUtils::hex2bin(getCertInHex());
+	PCCERT_CONTEXT certFromBinary = CertCreateCertificateContext(X509_ASN_ENCODING, cert.data(), cert.size());
+	PCCERT_CONTEXT certInStore = CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_EXISTING, certFromBinary, 0);
+	gotKey = CryptAcquireCertificatePrivateKey(certInStore, flags, 0, &key, &spec, freeKeyHandle);
   //CertFreeCertificateContext(certContext);
 
   return key;
@@ -183,7 +193,7 @@ vector<unsigned char> NativeSigner::sign(const vector<unsigned char> &digest)
 	{
     if (pin != "") {
       _log("Setting PIN for NCryptSignHash()...");
-      setPinForSigning(key);
+      setPinForSigning(*key);
     } 
 
 		DWORD size = 0;

@@ -20,7 +20,7 @@
 
 #include <string>
 #include <vector>
-#include <Windows.h>
+#include <WinCrypt.h>
 #include <ncrypt.h>
 
 #define BINARY_SHA1_LENGTH 20
@@ -36,6 +36,7 @@ public:
   //virtual ULONG_PTR getCertificatePrivateKey(BOOL* freeKeyHandle) { return NULL; }
 
 	static Signer* createSigner(const std::vector<unsigned char> &cert);
+	std::string getCertInHex() const { return certInHex; }
 	bool showInfo(const std::string &msg);
 	virtual std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) = 0;
 
@@ -86,5 +87,7 @@ protected:
 
 private:
 	std::string certInHex;
+
+protected:
 	std::vector<unsigned char> cert;
 };
