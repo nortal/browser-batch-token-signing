@@ -23,10 +23,10 @@
 #include "EstEIDHelper.h"
 #include "esteidpluginie_i.h"
 #include "HostExceptions.h"
+#include "PinDialog.h"
 #include <windows.h>
 #include <Wincrypt.h>
 #include <comutil.h>
-
 
 #if defined(_WIN32_WCE) && !defined(_CE_DCOM) && !defined(_CE_ALLOW_SINGLE_THREADED_OBJECTS_IN_MTA)
 #error "Single-threaded COM objects are not properly supported on Windows CE platform, such as the Windows Mobile platforms that do not include full DCOM support. Define _CE_ALLOW_SINGLE_THREADED_OBJECTS_IN_MTA to force ATL to support creating single-thread COM object's and allow use of it's single-threaded COM object implementations. The threading model in your rgs file was set to 'Free' as that is the only threading model supported in non DCOM Windows CE platforms."
@@ -54,6 +54,7 @@ BEGIN_COM_MAP(CEstEIDIEPluginBHO)
 	COM_INTERFACE_ENTRY(IEstEIDIEPluginBHO)
 	COM_INTERFACE_ENTRY(IDispatch)
 	COM_INTERFACE_ENTRY(IObjectWithSite)
+	COM_INTERFACE_ENTRY(IObjectSafety)
 END_COM_MAP()
 
 	DECLARE_PROTECT_FINAL_CONSTRUCT()
@@ -62,6 +63,7 @@ END_COM_MAP()
 	{
 		this->errorCode = 0;
 		this->language = NULL;
+    this->pinDialog = NULL;
 		return S_OK;
 	}
 
@@ -76,6 +78,7 @@ private:
 	BSTR language;
 	int errorCode;
 	std::string errorMessage;
+  CPinDialog * pinDialog;
 
 	void clearErrors();
 	void setError(BaseException &exception);
@@ -83,9 +86,12 @@ private:
 	BOOL isSiteAllowed();
 	BOOL isSameCardInReader(CComPtr<IEstEIDCertificate> _cert);
 	BOOL CEstEIDIEPluginBHO::certificateMatchesId(PCCERT_CONTEXT certContext, BSTR id);
+  std::string getNextHash(std::string allHashes, int& position, char* separator);
+  std::string askPin(int pinLength);
 
 public:
 	STDMETHOD(SetSite)(IUnknown *pUnkSite);
+	STDMETHOD(get_multipleHashesSupported)(BSTR *result);
 	STDMETHOD(get_version)(BSTR *result);
 	STDMETHOD(get_pluginLanguage)(BSTR *result);
 	STDMETHOD(put_pluginLanguage)(BSTR language);

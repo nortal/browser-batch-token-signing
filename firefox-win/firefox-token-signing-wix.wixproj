@@ -10,7 +10,7 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>4f4ba253-2199-45f7-95f9-4cbf296331db</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>firefox-token-signing_$(MAJOR_VERSION).$(MINOR_VERSION).$(RELEASE_VERSION).$(BUILD_NUMBER)_$(Platform)</OutputName>
+    <OutputName>firefox-token-signing_mass$(MAJOR_VERSION).$(MINOR_VERSION).$(RELEASE_VERSION).$(BUILD_NUMBER)_$(Platform)</OutputName>
     <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>

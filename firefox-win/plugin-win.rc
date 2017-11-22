@@ -27,38 +27,37 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION MAJOR_VER, MINOR_VER, RELEASE_VER, BUILD_VER
- PRODUCTVERSION MAJOR_VER, MINOR_VER, RELEASE_VER, BUILD_VER
- FILEFLAGSMASK 0x3fL
+FILEVERSION MAJOR_VER, MINOR_VER, RELEASE_VER, BUILD_VER
+PRODUCTVERSION MAJOR_VER, MINOR_VER, RELEASE_VER, BUILD_VER
+FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
- FILEFLAGS 0x1L
+FILEFLAGS 0x1L
 #else
- FILEFLAGS 0x0L
+FILEFLAGS 0x0L
 #endif
- FILEOS 0x4L
- FILETYPE 0x2L
- FILESUBTYPE 0x0L
+FILEOS 0x4L
+FILETYPE 0x2L
+FILESUBTYPE 0x0L
 BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904e4"
-        BEGIN
-            VALUE "CompanyName", "RIA"
-            VALUE "FileDescription", "Allows digital signing with Estonian ID cards"
-			VALUE "FileVersion", VER_STR(MAJOR_VER.MINOR_VER.RELEASE_VER.BUILD_VER)
-            VALUE "InternalName", "Firefox Token Signing Plugin"
-            VALUE "MIMEType", "application/x-digidoc|application/x-idcard-plugin"
-            VALUE "OriginalFilename", "npesteid-firefox-plugin.dll"
-            VALUE "ProductName", "Firefox Token Signing Plugin"
-			VALUE "ProductVersion", VER_STR(MAJOR_VER.MINOR_VER.RELEASE_VER.BUILD_VER)
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1252
-    END
+BLOCK "StringFileInfo"
+BEGIN
+BLOCK "040904e4"
+BEGIN
+VALUE "CompanyName", "NORTAL"
+VALUE "FileDescription", "Allows digital signing with Estonian ID cards for multiple documents"
+VALUE "FileVersion", VER_STR(MAJOR_VER.MINOR_VER.RELEASE_VER.BUILD_VER)
+VALUE "InternalName", "Firefox Token Signing Plugin Mass"
+VALUE "MIMEType", "application/x-digidoc-mass|application/x-idcard-plugin"
+VALUE "OriginalFilename", "npesteid-firefox-plugin.dll"
+VALUE "ProductName", "Firefox Token Signing Plugin Mass"
+VALUE "ProductVersion", VER_STR(MAJOR_VER.MINOR_VER.RELEASE_VER.BUILD_VER)
 END
-
+END
+BLOCK "VarFileInfo"
+BEGIN
+VALUE "Translation", 0x409, 1252
+END
+END
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -114,6 +113,18 @@ BEGIN
     LTEXT           "WARNING!!!",IDC_WARNING,8,6,304,20
 END
 
+IDD_PROGRESSBARDLG DIALOGEX 0, 0, 291, 101
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION
+EXSTYLE WS_EX_TOPMOST
+CAPTION "Allkirjastamine"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CTEXT           "Allkirjastamine: %d allikrja %d-est...",IDC_PROGRESS_TEXT,6,24,276,8
+    LTEXT           "",IDC_ERROR,7,7,271,8
+    CONTROL         "",IDC_PROGRESS_BAR,"msctls_progress32",WS_BORDER,6,42,278,14
+    PUSHBUTTON      "Katkesta",IDCANCEL,118,68,50,14
+END
+
 IDD_PINPAD_DIALOG DIALOGEX 0, 0, 290, 76
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION
 EXSTYLE WS_EX_TOPMOST
@@ -149,6 +160,14 @@ BEGIN
         BOTTOMMARGIN, 145
     END
 
+    IDC_PROGRESSBAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 284
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 94
+    END
+
     IDD_PINPAD_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -177,6 +196,54 @@ BEGIN
 END
 
 #endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United Kingdom) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+
+IDD_PINDIALOG DIALOGEX 0, 0, 237, 96
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_DLGMODALFRAME
+CAPTION "Allkirjastamine"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,117,75,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,171,75,50,14
+    EDITTEXT        IDC_PIN_ENTRY,16,42,206,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Palun sisestage PIN2",IDC_PIN_MESSAGE,15,17,205,22,0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_PINDIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 230
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 89
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

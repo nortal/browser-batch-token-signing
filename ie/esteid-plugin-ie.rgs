@@ -16,14 +16,14 @@ HKLM {
         NoRemove CurrentVersion {
           NoRemove Explorer {
             NoRemove 'Browser Helper Objects' {
-              ForceRemove '{2A4E94A4-B275-491A-9E32-CD7A26FC7C3B}' = s 'EstEIDIEPluginBHO' {
+              ForceRemove '{880A49C2-E366-45A9-902B-2FBFA537FB8F}' = s 'EstEIDIEPluginBHO' {
                 val 'NoExplorer' = d '1'
               }
             }
           }
           NoRemove Ext {
 			NoRemove PreApproved {
-			  ForceRemove '{2A4E94A4-B275-491A-9E32-CD7A26FC7C3B}' = s 'EstEIDIEPluginBHO' {
+			  ForceRemove '{880A49C2-E366-45A9-902B-2FBFA537FB8F}' = s 'EstEIDIEPluginBHO' {
 			  }
 			}
 		  }

@@ -33,8 +33,10 @@
 #include <ncrypt.h>
 #include "cert_dialog_win.h"
 #include "atlsafe.h"
+#include "PinDialog.h"
+#include "ProgressBar.h"
 
-#define VALID_HASH_LENGTH 40
+#define VALID_HASH_LENGTH   40
 
 extern HINSTANCE pluginInstance;
 
@@ -44,6 +46,7 @@ extern int EstEID_errorCode;
 
 bool allowedSite;
 char pluginLanguage[3];
+bool cancelSigning = false;
 
 bool isAllowedSite() {
 	if(!allowedSite) {
@@ -228,6 +231,43 @@ BOOL canUseCNG(char* id)
 	return false;
 }
 
+int getHashLength(char* allHashes) {
+  // calculate the number of characters until end-of-string or ','
+  int len = 0;
+  if (allHashes) {
+    while (allHashes[len] && allHashes[len] != ',') {
+      len++;
+    }
+  }
+  return len;
+}
+
+int getHashCount(char* allHashes) {
+  // calculate the number of hashes in the given hash string
+  int len = 0;
+  int count = 0;
+  if (allHashes) {
+    while (allHashes[len]) {
+      if (allHashes[len] == ',') {
+        count++;
+      }
+      len++;
+    }
+    count++;
+  }
+  return count;
+}
+
+void processMessages() {
+  //int cnt = 0;
+  MSG msg;
+  while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))// && cnt++ < 10)
+  {
+    ::TranslateMessage(&msg);
+    ::DispatchMessage(&msg);
+  }
+}
+
 bool doSignCNG(PluginInstance *obj, BCRYPT_PKCS1_PADDING_INFO padInfo, char *hash, int hashHexLength, char **signature)
 {
 	NCRYPT_KEY_HANDLE hKey = NULL;
@@ -235,7 +275,7 @@ bool doSignCNG(PluginInstance *obj, BCRYPT_PKCS1_PADDING_INFO padInfo, char *has
 	DWORD cbSignature = 0;
 	PBYTE pbSignature = NULL;
 
-	LOG_LOCATION;
+  LOG_LOCATION;
 	if (!CryptAcquireCertificatePrivateKey(obj->certContext, CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG | CRYPT_ACQUIRE_COMPARE_KEY_FLAG, NULL, &hKey, NULL, NULL)) {
 		LOG_LOCATION;
 		EstEID_log("**** Error 0x%x returned by CryptAcquireCertificatePrivateKey\n", GetLastError());
@@ -248,34 +288,34 @@ bool doSignCNG(PluginInstance *obj, BCRYPT_PKCS1_PADDING_INFO padInfo, char *has
 	NCryptSetProperty(hKey, NCRYPT_WINDOW_HANDLE_PROPERTY, (PBYTE)window, NULL, NULL);
 	LOG_LOCATION;
 
-	if (FAILED(secStatus = NCryptSignHash(hKey, &padInfo, (PBYTE)hash, hashHexLength, NULL, 0, &cbSignature, 0))) {
-		LOG_LOCATION;
-		handleErrorWithCode(secStatus, "NCryptSignHash", obj);
-		return false;
-	}
+  if (FAILED(secStatus = NCryptSignHash(hKey, &padInfo, (PBYTE)hash, hashHexLength, NULL, 0, &cbSignature, 0))) {
+    LOG_LOCATION;
+    handleErrorWithCode(secStatus, "NCryptSignHash", obj);
+    return false;
+  }
+
+  LOG_LOCATION;
+  //allocate the signature buffer
+  pbSignature = (PBYTE)HeapAlloc(GetProcessHeap(), 0, cbSignature);
+  if (NULL == pbSignature){
+    handleErrorWithCode(ESTEID_CRYPTO_API_ERROR, "HeapAlloc", obj);
+    return false;
+  }
+  LOG_LOCATION;
+  if (FAILED(secStatus = NCryptSignHash(hKey, &padInfo, (PBYTE)hash, hashHexLength, pbSignature, cbSignature, &cbSignature, BCRYPT_PAD_PKCS1))) {
+    LOG_LOCATION;
+    EstEID_log("**** Error 0x%x returned by NCryptSignHash\n", secStatus);
+    handleErrorWithCode(secStatus, "NCryptSignHash", obj);
+    return false;
+  }
+
+  LOG_LOCATION;
+  *signature = byteToChar(pbSignature, cbSignature);
+
+  EstEID_log("Signature: %s", *signature);
 
 	LOG_LOCATION;
-	//allocate the signature buffer
-	pbSignature = (PBYTE)HeapAlloc(GetProcessHeap(), 0, cbSignature);
-	if (NULL == pbSignature){
-		handleErrorWithCode(ESTEID_CRYPTO_API_ERROR, "HeapAlloc", obj);
-		return false;
-	}
-	LOG_LOCATION;
-	if (FAILED(secStatus = NCryptSignHash(hKey, &padInfo, (PBYTE)hash, hashHexLength, pbSignature, cbSignature, &cbSignature, BCRYPT_PAD_PKCS1))) {
-		LOG_LOCATION;
-		EstEID_log("**** Error 0x%x returned by NCryptSignHash\n", secStatus);
-		handleErrorWithCode(secStatus, "NCryptSignHash", obj);
-		return false;
-	}
-
-	LOG_LOCATION;
-	*signature = byteToChar(pbSignature, cbSignature);
-
-	EstEID_log("Signature: %s", *signature);
-	
-	LOG_LOCATION;
-	if (pbSignature) HeapFree(GetProcessHeap(), 0, pbSignature);
+  if (pbSignature) HeapFree(GetProcessHeap(), 0, pbSignature);
 	if (hKey) NCryptFreeObject(hKey);
 	return true;
 }
@@ -295,85 +335,257 @@ bool doSignCSP(PluginInstance *obj, BCRYPT_PKCS1_PADDING_INFO padInfo, char *inH
 		return false;
 	}
 
-	if (CryptAcquireCertificatePrivateKey(obj->certContext, 0, NULL, &cryptoProvider, &key_type, &must_release_provider))
-	{
-		EstEID_log("must_release_provider = %i", must_release_provider);
+  if (CryptAcquireCertificatePrivateKey(obj->certContext, 0, NULL, &cryptoProvider, &key_type, &must_release_provider))
+  {
+    EstEID_log("must_release_provider = %i", must_release_provider);
 
-		BYTE* hashBytes = (BYTE*)malloc(sizeof(BYTE)*hashHexLength);
-		memcpy(hashBytes, inHash, sizeof(BYTE)*hashHexLength);
+    BYTE* hashBytes = (BYTE*)malloc(sizeof(BYTE)*hashHexLength);
+    memcpy(hashBytes, inHash, sizeof(BYTE)*hashHexLength);
 
-		for (int i = 0; i < sizeof(hashBytes); i++)
-			EstEID_log("hashBytes: %02X", hashBytes[i]);
+    for (int i = 0; i < sizeof(hashBytes); i++)
+      EstEID_log("hashBytes: %02X", hashBytes[i]);
 
-		EstEID_log("_hash = %p, cryptoProvider = %p", _hash, cryptoProvider);
-		if (!CryptCreateHash(cryptoProvider, hashAlgorithm, 0, 0, &_hash)){
-			handleError("CryptCreateHash", obj);
-			free(hashBytes);
-			return false;
-		}
-		EstEID_log("CryptCreateHash() set hash object pointer to %p", _hash);
+    EstEID_log("_hash = %p, cryptoProvider = %p", _hash, cryptoProvider);
+    if (!CryptCreateHash(cryptoProvider, hashAlgorithm, 0, 0, &_hash)){
+      handleError("CryptCreateHash", obj);
+      free(hashBytes);
+      return false;
+    }
+    EstEID_log("CryptCreateHash() set hash object pointer to %p", _hash);
 
-		if (!CryptSetHashParam(_hash, HP_HASHVAL, hashBytes, 0)){
-			handleError("CryptSetHashParam", obj);
-			return false;
-		}
+    if (!CryptSetHashParam(_hash, HP_HASHVAL, hashBytes, 0)){
+      handleError("CryptSetHashParam", obj);
+      return false;
+    }
 
-		BYTE         *pbHash;
-		DWORD        dwHashLen;
-		DWORD        dwHashLenSize = sizeof(DWORD);
-		CryptGetHashParam(_hash, HP_HASHSIZE, (BYTE *)&dwHashLen, &dwHashLenSize, 0);
-		pbHash = (BYTE*)malloc(dwHashLen);
-		CryptGetHashParam(_hash, HP_HASHVAL, pbHash, &dwHashLen, 0);
-		EstEID_log("Hash len in bytes: %i", dwHashLen);
-		for (int i = 0; i < dwHashLen; i++)
-			EstEID_log("hashBytes: %02X", pbHash[i]);
+    BYTE         *pbHash;
+    DWORD        dwHashLen;
+    DWORD        dwHashLenSize = sizeof(DWORD);
+    CryptGetHashParam(_hash, HP_HASHSIZE, (BYTE *)&dwHashLen, &dwHashLenSize, 0);
+    pbHash = (BYTE*)malloc(dwHashLen);
+    CryptGetHashParam(_hash, HP_HASHVAL, pbHash, &dwHashLen, 0);
+    EstEID_log("Hash len in bytes: %i", dwHashLen);
+    for (int i = 0; i < dwHashLen; i++)
+      EstEID_log("hashBytes: %02X", pbHash[i]);
 
 #define SIGNATURE_LENGTH 1024
 
-		BYTE _signature[SIGNATURE_LENGTH];
-		DWORD signatureLength = SIGNATURE_LENGTH;
-		if (!CryptSignHash(_hash, AT_SIGNATURE, NULL, 0, _signature, &signatureLength))
-		{
-			DWORD err = GetLastError();
-			EstEID_log("CryptSignHash() AT_SIGNATURE ended with ERROR 0x%08X", err);
+    BYTE _signature[SIGNATURE_LENGTH];
+    DWORD signatureLength = SIGNATURE_LENGTH;
+    if (!CryptSignHash(_hash, AT_SIGNATURE, NULL, 0, _signature, &signatureLength))
+    {
+      DWORD err = GetLastError();
+      EstEID_log("CryptSignHash() AT_SIGNATURE ended with ERROR 0x%08X", err);
 
-			if (err == NTE_NO_KEY)
-			{
-				if (!CryptSignHash(_hash, AT_KEYEXCHANGE, NULL, 0, _signature, &signatureLength))
-				{
-					EstEID_log("CryptSignHash() AT_KEYEXCHANGE ended with ERROR 0x%08X", GetLastError());
-					handleError("CryptSignHash AT_KEYEXCHANGE", obj);
-					return false;
-				}
-				else
-					EstEID_log("CryptSignHash() AT_KEYEXCHANGE ended with OK");
-			}
-			else
-			{
-				handleError("CryptSignHash AT_SIGNATURE", obj);
-				return false;
-			}
-		}
-		else
-			EstEID_log("CryptSignHash() AT_SIGNATURE ended with SUCCESS");
+      if (err == NTE_NO_KEY)
+      {
+        if (!CryptSignHash(_hash, AT_KEYEXCHANGE, NULL, 0, _signature, &signatureLength))
+        {
+          EstEID_log("CryptSignHash() AT_KEYEXCHANGE ended with ERROR 0x%08X", GetLastError());
+          handleError("CryptSignHash AT_KEYEXCHANGE", obj);
+          return false;
+        }
+        else
+          EstEID_log("CryptSignHash() AT_KEYEXCHANGE ended with OK");
+      }
+      else
+      {
+        handleError("CryptSignHash AT_SIGNATURE", obj);
+        return false;
+      }
+    }
+    else
+      EstEID_log("CryptSignHash() AT_SIGNATURE ended with SUCCESS");
 
-		CryptDestroyHash(_hash);
-		if (must_release_provider) {
-			CryptReleaseContext(cryptoProvider, 0);
-		}
+    CryptDestroyHash(_hash);
+    if (must_release_provider) {
+      CryptReleaseContext(cryptoProvider, 0);
+    }
 
-		reverseBytes(_signature, signatureLength);
-		*signature = byteToChar(_signature, signatureLength);
-		free(hashBytes);
-	}
-	else
-	{
-		if (hash) free(hash);
-		handleError("CryptAcquireCertificatePrivateKey", obj);
-		return false;
-	}
+    reverseBytes(_signature, signatureLength);
+    *signature = byteToChar(_signature, signatureLength);
+    free(hashBytes);
+  }
+  else
+  {
+    if (hash) free(hash);
+    handleError("CryptAcquireCertificatePrivateKey", obj);
+    return false;
+  }
 
 	return true;
+}
+
+bool doMassSignCNG(PluginInstance *obj, char* allHashes, char* pin, char **signature)
+{
+  NCRYPT_KEY_HANDLE hKey = NULL;
+  SECURITY_STATUS secStatus = ERROR_SUCCESS;
+  DWORD cbSignature = 0;
+  PBYTE pbSignature = NULL;
+
+  char* allSignatures = NULL;     // for returned signatures
+  int hashPos = 0;                // search position in the complete hash string
+
+  time_t startTime = 0;           // for performance logging
+  int currentHash = 0;            // for performance logging
+  CProgressBarDialog* progressBarDlg = NULL;
+  HWND hWndPB = NULL;
+  int hashCount = getHashCount(allHashes);
+ 
+  cancelSigning = false;
+  char* hashAsHexStr = strtok(allHashes, ",");  // take the first hash
+  while (hashAsHexStr && !cancelSigning) {
+    // get and check the hash length
+    char* hash = hex2bin(hashAsHexStr);
+    int hashHexLength = strlen(hashAsHexStr) / 2;
+    BCRYPT_PKCS1_PADDING_INFO padInfo;
+    padInfo.pszAlgId = 0;
+    switch (hashHexLength) {
+    case BINARY_SHA1_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA1_ALGORITHM; break;
+    case BINARY_SHA224_LENGTH:
+      padInfo.pszAlgId = L"SHA224"; break;
+    case BINARY_SHA256_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA256_ALGORITHM; break;
+    case BINARY_SHA384_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA384_ALGORITHM; break;
+    case BINARY_SHA512_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA512_ALGORITHM; break;
+    default:
+      break;
+    }
+    if (padInfo.pszAlgId == 0) {
+      sprintf(EstEID_error, "invalid hash length: %i, hash: '%s'", hashHexLength, hashAsHexStr);
+      EstEID_log(EstEID_error);
+      EstEID_errorCode = ESTEID_INVALID_HASH_ERROR;
+      browserFunctions->setexception(&obj->header, EstEID_error);
+      return false;
+    }
+
+    LOG_LOCATION;
+    DWORD flags = CRYPT_ACQUIRE_CACHE_FLAG | CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG | CRYPT_ACQUIRE_COMPARE_KEY_FLAG;
+    if (!CryptAcquireCertificatePrivateKey(obj->certContext, flags, NULL, &hKey, NULL, NULL)) {
+      LOG_LOCATION;
+      EstEID_log("**** Error 0x%x returned by CryptAcquireCertificatePrivateKey\n", GetLastError());
+      handleError("CryptAcquireCertificatePrivateKey", obj);
+      return false;
+    }
+
+    LOG_LOCATION;
+    HWND window = (HWND)getNativeWindowHandle(obj);
+    NCryptSetProperty(hKey, NCRYPT_WINDOW_HANDLE_PROPERTY, (PBYTE)window, NULL, NULL);
+    LOG_LOCATION;
+
+    // If we have already asked the PIN,
+    if (CPinDialogCNG::HasPIN()) {
+      // then just pass it to CNG.
+      if (!CPinDialogCNG::SetPIN()){
+        return false;
+      }
+    }
+    else { 
+      // else ask the PIN from the user, store it internally, and pass it to CNG.
+      if (!CPinDialogCNG::AskPIN(obj, hKey)){
+        return false;
+      }
+    }
+
+    if (hashCount > 2 && !progressBarDlg) {
+      progressBarDlg = new CProgressBarDialog(hashCount);
+      hWndPB = progressBarDlg->Create(window, 0);
+      progressBarDlg->ShowWindow(SW_SHOWNORMAL);
+    }
+
+    // for performance logging
+    currentHash++;
+    if (startTime == 0) {
+      time(&startTime);
+    }
+
+    if (FAILED(secStatus = NCryptSignHash(hKey, &padInfo, (PBYTE)hash, hashHexLength, NULL, 0, &cbSignature, 0))) {
+      LOG_LOCATION;
+      handleErrorWithCode(secStatus, "NCryptSignHash", obj);
+      CPinDialogCNG::ResetPIN();
+      return false;
+    }
+
+    LOG_LOCATION;
+    //allocate the signature buffer
+    pbSignature = (PBYTE)HeapAlloc(GetProcessHeap(), 0, cbSignature);
+    if (NULL == pbSignature){
+      handleErrorWithCode(ESTEID_CRYPTO_API_ERROR, "HeapAlloc", obj);
+      CPinDialogCNG::ResetPIN();
+      return false;
+    }
+    LOG_LOCATION;
+    if (FAILED(secStatus = NCryptSignHash(hKey, &padInfo, (PBYTE)hash, hashHexLength, pbSignature, cbSignature, &cbSignature, BCRYPT_PAD_PKCS1))) {
+      LOG_LOCATION;
+      EstEID_log("**** Error 0x%x returned by NCryptSignHash\n", secStatus);
+      handleErrorWithCode(secStatus, "NCryptSignHash", obj);
+      CPinDialogCNG::ResetPIN();
+      return false;
+    }
+
+    // (re)allocate space for the (new) signature 
+    char* tmp = byteToChar(pbSignature, cbSignature);
+    if (NULL == tmp){
+      handleErrorWithCode(ESTEID_CRYPTO_API_ERROR, "HeapAlloc", obj);
+      CPinDialogCNG::ResetPIN();
+      return false;
+    }
+    if (allSignatures == NULL) {
+      allSignatures = (char*)malloc(strlen(tmp) + 1);
+      allSignatures[0] = '\0';
+    }
+    else {
+      char* oldAllSignatures = allSignatures;
+      allSignatures = (char*)malloc(strlen(tmp) + strlen(oldAllSignatures) + 2);
+      allSignatures[0] = '\0';
+      strcat(allSignatures, oldAllSignatures);
+      if (oldAllSignatures) free(oldAllSignatures);
+      strcat(allSignatures, ",");
+    }
+
+    // add the (new) signature to the buffer
+    strcat(allSignatures, tmp);
+
+    // loop cleanup
+    free(tmp); tmp = NULL;
+    if (pbSignature) HeapFree(GetProcessHeap(), 0, pbSignature); pbSignature = NULL;
+
+    // update progress bar
+    if (progressBarDlg && hWndPB && !cancelSigning) {
+      SendNotifyMessage(hWndPB, WM_UPDATE_PROGRESS, 0, 0);
+    }
+
+    // process the pending Windows messages
+    processMessages();
+
+    // take the next hash
+    hashAsHexStr = strtok(NULL, ",");
+  }
+
+  LOG_LOCATION;
+  if (cancelSigning) {
+    EstEID_log("CNG mass signing failed, user canceled while signing hash %d of %d.", currentHash, hashCount);
+    handleErrorWithCode(SCARD_W_CANCELLED_BY_USER, "doMassSignCNG", obj);
+    if (allSignatures) free(allSignatures); allSignatures = NULL;
+  }
+
+  *signature = allSignatures;
+  EstEID_log("Signatures: %s\n", *signature);
+  EstEID_log("%d hashes signed in %d seconds.", currentHash, (int)difftime(time(NULL), startTime));
+
+  LOG_LOCATION;
+  if (hKey) NCryptFreeObject(hKey);
+  CPinDialogCNG::ResetPIN();
+  if (progressBarDlg) {
+    if (progressBarDlg->IsWindow())
+      progressBarDlg->DestroyWindow();
+    delete progressBarDlg;
+  }
+  
+  return (cancelSigning ? false : true);
 }
 
 bool doSign(PluginInstance *obj, NPVariant *args, unsigned argCount, NPVariant *result)
@@ -382,30 +594,31 @@ bool doSign(PluginInstance *obj, NPVariant *args, unsigned argCount, NPVariant *
 	int methodResult = true;
 	
 	#define NT_SUCCESS(Status)          (((NTSTATUS)(Status)) >= 0)
-	
-	
-	
 	NTSTATUS status = ((NTSTATUS)0xC0000001L);
 	
 	char *hash = NULL;
 	char *certId = NULL;
+  char pin[PIN2_LENGTH + 1] = { 0 };
+  char *allHashes = NULL;
 	HCERTSTORE cert_store = NULL;
 	PCCERT_CONTEXT certContext = NULL;
 
 	FAIL_IF_NOT_ALLOWED_SITE;
-	
-	if(argCount > 2 && NPVARIANT_IS_OBJECT(args[2])){
-		pluginLanguage[0] = '\0';
-		NPUTF8* optionsLanguage = getLanguageFromOptions(obj, args[2]);
 
-		if (NULL != optionsLanguage) {
-			strncpy(pluginLanguage, optionsLanguage, 2);
-			free(optionsLanguage);
-		}
-	}
+  // First check that the minimum number of arguments is given.
+  if (argCount < 2) {
+    browserFunctions->setexception(&obj->header, "Missing arguments");
+    sprintf(EstEID_error, "Missing arguments");
+    EstEID_log(EstEID_error);
+    EstEID_errorCode = ESTEID_CRYPTO_API_ERROR;
+    browserFunctions->setexception(&obj->header, EstEID_error);
+    return false;
+  }
+
+  // Get the certificate id (1st argument) from the given arguments and check that the certificate can be used.
 	certId = createStringFromNPVariant(&args[0]);
 	if (obj->certContext == NULL) {
-		cert_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL, CERT_SYSTEM_STORE_CURRENT_USER | CERT_STORE_READONLY_FLAG, L"MY");
+		cert_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL, CERT_SYSTEM_STORE_CURRENT_USER | CERT_STORE_READONLY_FLAG, L"MY"); //READONLY WAS TEMPORARILY REMOVED
 		if(!cert_store){
 			sprintf(EstEID_error, "CertOpenStore failed");
 			EstEID_log(EstEID_error);
@@ -430,71 +643,114 @@ bool doSign(PluginInstance *obj, NPVariant *args, unsigned argCount, NPVariant *
 		}
 	}	
 
-	if (argCount < 2) {
-		browserFunctions->setexception(&obj->header, "Missing arguments");
-		sprintf(EstEID_error, "Missing arguments");
-		EstEID_log(EstEID_error);
-		EstEID_errorCode = ESTEID_CRYPTO_API_ERROR;
-		browserFunctions->setexception(&obj->header, EstEID_error);
-		return false;
-	}
-	
-	EstEID_setLocale(pluginLanguage);
+  // Get the language (3rd argument) from the given arguments. Default is used if not given here.
+  if (argCount > 2 && NPVARIANT_IS_OBJECT(args[2])){
+    pluginLanguage[0] = '\0';
+    NPUTF8* optionsLanguage = getLanguageFromOptions(obj, args[2]);
 
-	int hashHexLength = strlen(createStringFromNPVariant(&args[1]))/2;
+    if (NULL != optionsLanguage) {
+      strncpy(pluginLanguage, optionsLanguage, 2);
+      free(optionsLanguage);
+    }
+  }
+  EstEID_setLocale(pluginLanguage);
 
-	BCRYPT_PKCS1_PADDING_INFO padInfo;
-	padInfo.pszAlgId = 0;
-	switch(hashHexLength) {
-		case BINARY_SHA1_LENGTH:
-			padInfo.pszAlgId = NCRYPT_SHA1_ALGORITHM;break; 
-		case BINARY_SHA224_LENGTH:
-			padInfo.pszAlgId = L"SHA224"; break;
-		case BINARY_SHA256_LENGTH :
-			padInfo.pszAlgId = NCRYPT_SHA256_ALGORITHM; break;
-		case BINARY_SHA384_LENGTH:
-			padInfo.pszAlgId = NCRYPT_SHA384_ALGORITHM; break;
-		case BINARY_SHA512_LENGTH:
-			padInfo.pszAlgId = NCRYPT_SHA512_ALGORITHM; break;
-		default:
-			break; 
-	}
+  // get the hash from the given arguments
+#if FALSE
+  //TESTING
+  char* testHashes=
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030,"
+    "b1ce7a7c9b2c93064cbd191e2d8a933e823179a1f0226685b4baf07162b6d4b0,"
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030,"
+    "b1ce7a7c9b2c93064cbd191e2d8a933e823179a1f0226685b4baf07162b6d4b0,"
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030,"
+    "b1ce7a7c9b2c93064cbd191e2d8a933e823179a1f0226685b4baf07162b6d4b0,"
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030,"
+    "b1ce7a7c9b2c93064cbd191e2d8a933e823179a1f0226685b4baf07162b6d4b0,"
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030,"
+    "b1ce7a7c9b2c93064cbd191e2d8a933e823179a1f0226685b4baf07162b6d4b0,"
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030,"
+    "b1ce7a7c9b2c93064cbd191e2d8a933e823179a1f0226685b4baf07162b6d4b0,"
+    "cf83638fc7d64d14d3a2ad94799c59bb29501b18d2b1c796d0377a69ca4b4216,"
+    "680f4f1a2adb87f8e181d155bf0379c0b92bbca235b336dec8f01e7f2b73c030";
+  allHashes = (char*)malloc(strlen(testHashes) + 1);
+  strcpy(allHashes, testHashes);
+#else 
+  // PRODUCTION
+  allHashes = createStringFromNPVariant(&args[1]);
+#endif
 
-	if(padInfo.pszAlgId == 0) {
-		sprintf(EstEID_error, "invalid incoming hash length: %i", hashHexLength);
-		EstEID_log(EstEID_error);
-		EstEID_errorCode = ESTEID_INVALID_HASH_ERROR;
-		browserFunctions->setexception(&obj->header, EstEID_error);
-		return false;
-	}
+  int hashHexLength;
+  BCRYPT_PKCS1_PADDING_INFO padInfo;
+  BOOL isMassSigning = (strstr(allHashes, ",") != NULL);
+  
+  if (!isMassSigning) {
+    hashHexLength = getHashLength(allHashes) / 2;
 
-	hash = hex2bin(createStringFromNPVariant(&args[1]));
-	
-	//Convert certId from char * to BSTR
-	/*WCHAR* wCertID = NULL;
-	int wHashLen = 0;
+    padInfo.pszAlgId = 0;
+    switch (hashHexLength) {
+    case BINARY_SHA1_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA1_ALGORITHM; break;
+    case BINARY_SHA224_LENGTH:
+      padInfo.pszAlgId = L"SHA224"; break;
+    case BINARY_SHA256_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA256_ALGORITHM; break;
+    case BINARY_SHA384_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA384_ALGORITHM; break;
+    case BINARY_SHA512_LENGTH:
+      padInfo.pszAlgId = NCRYPT_SHA512_ALGORITHM; break;
+    default:
+      break;
+    }
 
-	int certIDHexLength = strlen(certID);
-	wHashLen = MultiByteToWideChar(CP_ACP, 0, certId, -1, NULL, 0);
-	hash = new WCHAR[hashHexLength];
-	MultiByteToWideChar(CP_ACP, 0, certId, -1, (LPWSTR)wCertID, certIDHexLength);*/
+    if (padInfo.pszAlgId == 0) {
+      sprintf(EstEID_error, "invalid incoming hash length: %i", hashHexLength);
+      EstEID_log(EstEID_error);
+      EstEID_errorCode = ESTEID_INVALID_HASH_ERROR;
+      browserFunctions->setexception(&obj->header, EstEID_error);
+      return false;
+    }
 
-
-	LOG_LOCATION;
+    hash = hex2bin(allHashes);
+  }
+  	
+  LOG_LOCATION;
 	char *signature = "";
-
-	if (canUseCNG(certId))
+  
+  if (isMassSigning)
+  {
+    EstEID_log("Using CNG for mass signing.");
+    if (!doMassSignCNG(obj, allHashes, pin, &signature))
+    {
+      EstEID_log("CNG mass signing failed.");
+      methodResult = false;
+      goto Cleanup;
+    }
+    else
+    {
+      EstEID_log("CNG mass signing OK");
+      methodResult = true;
+      EstEID_log("Returned signatures: %s", signature);
+    }
+  }
+	else if (canUseCNG(certId))
 	{
-		EstEID_log("CNG can be used with selected certificate");
+	  EstEID_log("CNG can be used with selected certificate");
 		if (!doSignCNG(obj, padInfo, hash, hashHexLength, &signature))
 		{
-			EstEID_log("CNG signing. Using CAPI.");
+			EstEID_log("CNG signing. Using CAPI NG.");
 			methodResult = false;
 			goto Cleanup;
 		}
 		else
 		{
-			EstEID_log("CNG sign OK");
+      EstEID_log("CNG sign OK");
 			methodResult = true;
 			EstEID_log("Returned signature: %s", signature);
 		}
@@ -533,6 +789,8 @@ Cleanup:
 	LOG_LOCATION;
 	if(hash) free(hash);
 	if(certId) free(certId);
+  if (allHashes) free(allHashes);
+//  if (pinDialog) delete pinDialog;
 	EstEID_log("Signing ended");
 	return methodResult;
 }
@@ -668,6 +926,9 @@ bool pluginGetProperty(PluginInstance *obj, NPIdentifier name, NPVariant *varian
 	else if (isSameIdentifier(name, "pluginLanguage")){
 		return copyStringToNPVariant(pluginLanguage, variant);
 	}
+  else if (isSameIdentifier(name, "multipleHashesSupported")){
+    return copyStringToNPVariant("true", variant);
+  }
 	EstEID_log("returning false");
 	return false;
 }
@@ -767,12 +1028,103 @@ void handleError(char* methodName, PluginInstance *obj) {
 void handleErrorWithCode(int errorCode, char* methodName, PluginInstance *obj) {
 	sprintf(EstEID_error, "ERROR: %s failed, error code = 0x%02X", methodName, errorCode);
 	EstEID_log(EstEID_error);
+
 	if(errorCode == SCARD_W_CANCELLED_BY_USER) {
 		sprintf(EstEID_error, "User cancel");
 		EstEID_errorCode = ESTEID_USER_CANCEL;
 	}
-	else {
+  else if (errorCode == SCARD_W_CHV_BLOCKED) {
+    sprintf(EstEID_error, "Card blocked");
+    EstEID_errorCode = ESTEID_PIN_BLOCKED;
+  }
+  else {
 		EstEID_errorCode = ESTEID_CRYPTO_API_ERROR;
 	}
+
 	browserFunctions->setexception(&obj->header, EstEID_error);
 }
+
+#if FALSE // code to remove later:
+
+int askPin(char* pin, int pinLength) {
+  if (!pinDialog) {
+    pinDialog = new CPinDialog();
+    //pinDialog->setAttemptsRemaining(3);
+  }
+
+  int result = pinDialog->getPin(pin, pinLength);
+  if (result == IDOK) {
+    if (*pin == 0) {
+      // Empty pin given, just return error (handled as IDCANCEL).
+      EstEID_log("No pin given");
+      result = PIN_ERROR_EMPTY_PIN;
+    }
+    //else if (strlen(pin) < pinLength) {
+    //  EstEID_log("Pin is too short");
+    //  pinDialog->setInvalidPin(true);
+    //  return askPin(pin, pinLength);
+    //}
+  }
+
+  delete pinDialog;
+  pinDialog = NULL;
+  return result;
+}
+
+bool askAndCheckPin(PluginInstance *obj, NCRYPT_KEY_HANDLE hKey, char* pin, int pinLength) {
+  bool pinOK = false;
+
+  while (!pinOK) {
+    // Ask and store PIN2 locally.
+    if (pin && *pin == 0) {
+      int result = askPin(pin, PIN2_LENGTH);
+      if (result == IDCANCEL) {
+        EstEID_log("CNG mass signing failed to ask PIN, user canceled.");
+        handleErrorWithCode(SCARD_W_CANCELLED_BY_USER, "askPin", obj);
+        return false;
+      }
+      else if (result != IDOK) {
+        EstEID_log("CNG mass signing failed to ask PIN.");
+        handleErrorWithCode(result, "askPin", obj);
+        return false;
+      }
+    }
+
+    // Try to give PIN2 to CNG. 
+    if (pin && *pin) {
+      WCHAR Pin[10] = { 0 };
+      int pinLen = strlen(pin);
+      MultiByteToWideChar(CP_ACP, 0, pin, -1, (LPWSTR)Pin, pinLen);
+      SECURITY_STATUS st = NCryptSetProperty(hKey, NCRYPT_PIN_PROPERTY, (PBYTE)Pin, (ULONG)wcslen(Pin)*sizeof(WCHAR), 0);
+      if (st == SCARD_W_WRONG_CHV) {
+        // 0x8010006b: wrong pin
+        EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY): Wrong PIN.\n", st);
+        if (pinDialog) {
+          pinDialog->setInvalidPin(true);
+        }
+        *pin = '\0';  // reset stored pin
+      }
+      else if (st == SCARD_W_CHV_BLOCKED) {
+        // 0x8010006c: card is blocked
+        EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY): Card blocked.\n", st);
+        handleErrorWithCode(st, "NCryptSetProperty", obj);
+        return false;
+      }
+      else if (st != ERROR_SUCCESS)
+      {
+        // other error
+        EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY).\n", st);
+        handleErrorWithCode(st, "NCryptSetProperty", obj);
+        return false;
+      }
+      else {
+        // PIN OK, continue
+        pinOK = true;
+      }
+    }
+  }
+
+  return pinOK;
+}
+
+#endif //FALSE

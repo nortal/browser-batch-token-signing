@@ -2,16 +2,16 @@ HKCR
 {
 	esteidpluginie.EstEIDCertificate.1 = s 'EstEIDCertificate Class'
 	{
-		CLSID = s '{2615B13B-A08B-442C-8032-4D9981060190}'
+		CLSID = s '{9BF5CDBC-D173-44DF-9A41-7D654D478A11}'
 	}
 	esteidpluginie.EstEIDCertificate = s 'EstEIDCertificate Class'
 	{
-		CLSID = s '{2615B13B-A08B-442C-8032-4D9981060190}'
+		CLSID = s '{9BF5CDBC-D173-44DF-9A41-7D654D478A11}'
 		CurVer = s 'esteidpluginie.EstEIDCertificate.1'
 	}
 	NoRemove CLSID
 	{
-		ForceRemove {2615B13B-A08B-442C-8032-4D9981060190} = s 'EstEIDCertificate Class'
+		ForceRemove {9BF5CDBC-D173-44DF-9A41-7D654D478A11} = s 'EstEIDCertificate Class'
 		{
 			ProgID = s 'esteidpluginie.EstEIDCertificate.1'
 			VersionIndependentProgID = s 'esteidpluginie.EstEIDCertificate'
@@ -20,7 +20,7 @@ HKCR
 			{
 				val ThreadingModel = s 'Apartment'
 			}
-			'TypeLib' = s '{23EF5046-6402-4C39-B34B-3C47826805D1}'
+			'TypeLib' = s '{76BC53BB-3D87-4755-B85F-48C7395A6578}'
 		}
 	}
 }

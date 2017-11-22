@@ -513,7 +513,11 @@
       <ModuleDefinitionFile>.\esteid-plugin-ie.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
+      <PerUserRedirection>true</PerUserRedirection>
     </Link>
+    <ProjectReference>
+      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release HTTP|Win32'">
     <Midl>
@@ -684,7 +688,9 @@
     <ClCompile Include="BinaryUtils.cpp" />
     <ClCompile Include="CngCapiSigner.cpp" />
     <ClCompile Include="PinDialog.cpp" />
+    <ClCompile Include="PinDialogCNG.cpp" />
     <ClCompile Include="PKCS11Signer.cpp" />
+    <ClCompile Include="ProgressBar.cpp" />
     <ClCompile Include="SignerFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -712,6 +718,7 @@
     <ClInclude Include="PinDialog.h" />
     <ClInclude Include="PKCS11CardManager.h" />
     <ClInclude Include="PKCS11Signer.h" />
+    <ClInclude Include="ProgressBar.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Signer.h" />
     <ClInclude Include="SignerFactory.h" />

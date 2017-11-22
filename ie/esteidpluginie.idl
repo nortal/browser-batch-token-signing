@@ -9,7 +9,7 @@ import "ocidl.idl";
 
 [
 	object,
-	uuid(4E59E13F-7CEE-4013-9275-685FAFCD560B),
+	uuid(A0024F85-5662-40C3-B0A9-85646EA788ED),
 	dual,
 	nonextensible,
 	helpstring("IEstEIDIEPluginBHO Interface"),
@@ -26,7 +26,7 @@ interface IEstEIDIEPluginBHO : IDispatch{
 };
 [
 	object,
-	uuid(E23AF8B5-2D34-45EC-95E6-24791F84486E),
+	uuid(3ECA2169-2EFC-4EB5-B83A-8DC2A6688904),
 	dual,
 	nonextensible,
 	helpstring("IEstEIDCertificate Interface"),
@@ -38,7 +38,7 @@ interface IEstEIDCertificate : IDispatch{
 	[propget, id(3), helpstring("property certificate cert (certificateAsHex)")] HRESULT cert([out, retval] BSTR *certificate);
 };
 [
-	uuid(23EF5046-6402-4C39-B34B-3C47826805D1),
+	uuid(76BC53BB-3D87-4755-B85F-48C7395A6578),
 	version(1.0),
 	helpstring("esteidpluginie 1.0 Type Library")
 ]
@@ -46,7 +46,7 @@ library esteidpluginieLib
 {
 	importlib("stdole2.tlb");
 	[
-		uuid(2A4E94A4-B275-491A-9E32-CD7A26FC7C3B),
+		uuid(880A49C2-E366-45A9-902B-2FBFA537FB8F),
 		helpstring("EstEIDIEPluginBHO Class")
 	]
 	coclass EstEIDIEPluginBHO
@@ -54,7 +54,7 @@ library esteidpluginieLib
 		[default] interface IEstEIDIEPluginBHO;
 	};
 	[
-		uuid(2615B13B-A08B-442C-8032-4D9981060190),
+		uuid(9BF5CDBC-D173-44DF-9A41-7D654D478A11),
 		helpstring("EstEIDCertificate Class")
 	]
 	coclass EstEIDCertificate

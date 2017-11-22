@@ -2,9 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <MAJOR_VERSION>3</MAJOR_VERSION>
-    <MINOR_VERSION>12</MINOR_VERSION>
-    <RELEASE_VERSION>1</RELEASE_VERSION>
+    <MAJOR_VERSION>1</MAJOR_VERSION>
+    <MINOR_VERSION>0</MINOR_VERSION>
+    <RELEASE_VERSION>0</RELEASE_VERSION>
     <BUILD_NUMBER>0</BUILD_NUMBER>
   </PropertyGroup>
   <PropertyGroup />

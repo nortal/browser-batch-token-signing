@@ -10,7 +10,7 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>d0a88d6a-6fe4-4374-a324-b801a6f6ec26</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>ie-token-signing_$(MAJOR_VERSION).$(MINOR_VERSION).$(RELEASE_VERSION).$(BUILD_NUMBER)_$(Platform)</OutputName>
+    <OutputName>ie-token-signing_mass$(MAJOR_VERSION).$(MINOR_VERSION).$(RELEASE_VERSION).$(BUILD_NUMBER)_$(Platform)</OutputName>
     <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
@@ -53,11 +53,11 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <PropertyGroup>
-    <PostBuildEvent>IF "$(SIGNCERT)" NEQ "" signtool.exe sign /a /v /s MY /n "$(SIGNCERT)" /fd SHA256 /du http://installer.id.ee /t http://timestamp.verisign.com/scripts/timstamp.dll !(TargetPath)</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
     <PreBuildEvent>IF "$(SIGNCERT)" NEQ "" signtool.exe sign /a /v /s MY /n "$(SIGNCERT)" /fd SHA256 /du http://installer.id.ee /t http://timestamp.verisign.com/scripts/timstamp.dll $(SolutionDir)\Release\esteid-plugin-ie.dll
 IF "$(SIGNCERT)" NEQ "" (IF EXIST $(SolutionDir)\x64\Release\esteid-plugin-ie.dll signtool.exe sign /a /v /s MY /n "$(SIGNCERT)" /fd SHA256 /du http://installer.id.ee /t http://timestamp.verisign.com/scripts/timstamp.dll $(SolutionDir)\x64\Release\esteid-plugin-ie.dll)</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>IF "$(SIGNCERT)" NEQ "" signtool.exe sign /a /v /s MY /n "$(SIGNCERT)" /fd SHA256 /du http://installer.id.ee /t http://timestamp.verisign.com/scripts/timstamp.dll !(TargetPath)</PostBuildEvent>
   </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

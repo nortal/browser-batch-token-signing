@@ -2,8 +2,8 @@
 	NoRemove MIME {
 		NoRemove Database {
 			NoRemove 'Content Type'{
-				'application/x-digidoc'{ 
-					val CLSID = s '{2A4E94A4-B275-491A-9E32-CD7A26FC7C3B}'
+				'application/x-digidoc-mass'{ 
+					val CLSID = s '{880A49C2-E366-45A9-902B-2FBFA537FB8F}'
 				}
 			}
 		}

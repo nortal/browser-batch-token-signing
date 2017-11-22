@@ -30,7 +30,9 @@ public:
 		certContext = _certContext;
 	}
 	string sign();
+  NCRYPT_KEY_HANDLE getCertificatePrivateKey(BOOL* freeKeyHandle);
 
 private:
+  SECURITY_STATUS setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key);
 	PCCERT_CONTEXT certContext;
 };

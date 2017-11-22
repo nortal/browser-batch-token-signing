@@ -34,9 +34,9 @@
 #  define ESTEID_PLUGIN_VERSION VERSION
 #endif
 
-#define PLUGIN_NAME        "Firefox Token Signing"
-#define PLUGIN_DESCRIPTION "Allows digital signing with Estonian, Finnish, Latvian and Lithuanian ID cards"
-#define MIME_TYPE         "application/x-digidoc"
+#define PLUGIN_NAME        "Firefox Token Signing Mass"
+#define PLUGIN_DESCRIPTION "Allows multiple digital signing with Estonian, Finnish, Latvian and Lithuanian ID cards"
+#define MIME_TYPE         "application/x-digidoc-mass"
 
 #endif
     

@@ -24,11 +24,93 @@
 #include <ncrypt.h>
 #include <WinCrypt.h>
 #include <cryptuiapi.h>
-extern "C" {
-#include "esteid_log.h"
-}
+#include "PinDialog.h"
+//extern "C" {
+//#include "esteid_log.h"
+//}
 
 using namespace std;
+
+SECURITY_STATUS CngCapiSigner::setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key) {
+  SECURITY_STATUS st = ERROR_SUCCESS;
+
+  //// If we have already asked the PIN,
+  //if (CPinDialogCNG::HasPIN()) {
+  //  // then just pass it to CNG.
+  //  if (!CPinDialogCNG::SetPIN()){
+  //    return false;
+  //  }
+  //}
+  //else {
+  //  // else ask the PIN from the user, store it internally, and 
+  //  // pass it to CNG to see if it is correct.
+  //  if (!CPinDialogCNG::AskPIN(key)){
+  //    return false;
+  //  }
+  //}
+
+  if (pin != "") {
+    WCHAR Pin[10] = { 0 };
+    int pinLen = pin.length();
+    MultiByteToWideChar(CP_ACP, 0, pin.c_str(), -1, (LPWSTR)Pin, pinLen);
+    SECURITY_STATUS st = NCryptSetProperty(key, NCRYPT_PIN_PROPERTY, (PBYTE)Pin, (ULONG)wcslen(Pin)*sizeof(WCHAR), 0);
+    if (st != ERROR_SUCCESS)
+    {
+      EstEID_log("**** Error 0x%x returned by NCryptSetProperty(NCRYPT_PIN_PROPERTY)\n", st);
+      pin = ""; // reset stored pin
+    }
+  }
+
+  return st;
+}
+
+NCRYPT_KEY_HANDLE CngCapiSigner::getCertificatePrivateKey(BOOL* freeKeyHandle) {
+  BCRYPT_PKCS1_PADDING_INFO padInfo;
+  DWORD obtainKeyStrategy = CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG;
+  vector<unsigned char> digest = BinaryUtils::hex2bin(getHash()->c_str());
+
+  ALG_ID alg = 0;
+
+  switch (digest.size())
+  {
+  case BINARY_SHA1_LENGTH:
+    padInfo.pszAlgId = NCRYPT_SHA1_ALGORITHM;
+    alg = CALG_SHA1;
+    break;
+  case BINARY_SHA224_LENGTH:
+    padInfo.pszAlgId = L"SHA224";
+    obtainKeyStrategy = CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG;
+    break;
+  case BINARY_SHA256_LENGTH:
+    padInfo.pszAlgId = NCRYPT_SHA256_ALGORITHM;
+    alg = CALG_SHA_256;
+    break;
+  case BINARY_SHA384_LENGTH:
+    padInfo.pszAlgId = NCRYPT_SHA384_ALGORITHM;
+    alg = CALG_SHA_384;
+    break;
+  case BINARY_SHA512_LENGTH:
+    padInfo.pszAlgId = NCRYPT_SHA512_ALGORITHM;
+    alg = CALG_SHA_512;
+    break;
+  default:
+    throw InvalidHashException();
+  }
+
+  SECURITY_STATUS err = 0;
+  DWORD size = 256;
+  vector<unsigned char> signature(size, 0);
+
+  DWORD flags = obtainKeyStrategy | CRYPT_ACQUIRE_COMPARE_KEY_FLAG;
+  DWORD spec = 0;
+  //BOOL freeKeyHandle = false;
+  HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key = NULL;
+  BOOL gotKey = true;
+  gotKey = CryptAcquireCertificatePrivateKey(certContext, flags, 0, &key, &spec, freeKeyHandle);
+  //CertFreeCertificateContext(certContext);
+
+  return key;
+}
 
 string CngCapiSigner::sign() {
 	EstEID_log("Signing with hash: %s, with certId: %s", getHash()->c_str(), getCertId());
@@ -80,7 +162,14 @@ string CngCapiSigner::sign() {
 	{
 	case CERT_NCRYPT_KEY_SPEC:
 	{
-		EstEID_log("Using CNG");
+		EstEID_log("Using CNG.");
+
+    if (pin != "") {
+      EstEID_log("Setting PIN for NCryptSignHash()...");
+      setPinForSigning(key);
+    } 
+
+    EstEID_log("Signing hash...");
 		err = NCryptSignHash(key, &padInfo, PBYTE(&digest[0]), DWORD(digest.size()),
 			&signature[0], DWORD(signature.size()), (DWORD*)&size, BCRYPT_PAD_PKCS1);
 		if (freeKeyHandle) {

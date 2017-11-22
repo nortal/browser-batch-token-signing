@@ -22,12 +22,13 @@
 #include <atlhost.h>
 #include <atlstr.h>
 #include <atlctl.h>
-#include <ncrypt.h>
-extern "C" {
+#include <string>
+#include "plugin-class.h"
 #include "esteid_log.h"
-}
 
 using namespace ATL;
+
+extern int attemptsRemaining;
 
 #define PIN_ERROR_GENERAL   -1
 #define PIN_ERROR_BLOCKED   -2
@@ -41,7 +42,6 @@ class CPinDialog :
 	public CAxDialogImpl<CPinDialog>
 {
 public:
-	char* getPin();
   int getPin(char*, int);
 	void showPinBlocked();
 	void setAttemptsRemaining(int attemptsRemaining);
@@ -51,26 +51,26 @@ public:
   CPinDialog(){ pinLen = PIN2_LENGTH; }
 	~CPinDialog(){}
 
-	enum { IDD = IDD_PINDIALOG };
+  enum { IDD = IDD_PINDIALOG };
 
-BEGIN_MSG_MAP(CPinDialog)
-	MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-	MESSAGE_HANDLER(WM_CTLCOLORSTATIC, OnCtlColorStatic)
-	COMMAND_HANDLER(IDOK, BN_CLICKED, OnClickedOK)
-	COMMAND_HANDLER(IDCANCEL, BN_CLICKED, OnClickedCancel)
-	CHAIN_MSG_MAP(CAxDialogImpl<CPinDialog>)
-END_MSG_MAP()
+  BEGIN_MSG_MAP(CPinDialog)
+	  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+	  MESSAGE_HANDLER(WM_CTLCOLORSTATIC, OnCtlColorStatic)
+	  COMMAND_HANDLER(IDOK, BN_CLICKED, OnClickedOK)
+	  COMMAND_HANDLER(IDCANCEL, BN_CLICKED, OnClickedCancel)
+	  CHAIN_MSG_MAP(CAxDialogImpl<CPinDialog>)
+  END_MSG_MAP()
 
-  LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
-    CAxDialogImpl<CPinDialog>::OnInitDialog(uMsg, wParam, lParam, bHandled);
-    ATLVERIFY(CenterWindow());
-    GotoDlgCtrl(GetDlgItem(IDC_PIN_ENTRY));
+	LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {		
+		CAxDialogImpl<CPinDialog>::OnInitDialog(uMsg, wParam, lParam, bHandled);
+		ATLVERIFY(CenterWindow());
+		GotoDlgCtrl(GetDlgItem(IDC_PIN_ENTRY));
 
-    if (invalidPin || attemptsRemaining < 3) {
-      std::wstring msg = getWrongPinErrorMessage();
-      EstEID_log("Sul on %i katset jäänud", attemptsRemaining);
-      SetDlgItemText(IDC_PIN_MESSAGE, &msg[0]);
-    }
+		if (invalidPin || attemptsRemaining < 3) {			
+			std::wstring msg = getWrongPinErrorMessage();
+			EstEID_log("sul on %i katseid jäänud", attemptsRemaining);
+			SetDlgItemText(IDC_PIN_MESSAGE, &msg[0]);
+		}
 
     // Disable text field and OK button of no more tries left. Set the focus to Cancel button.
     if (attemptsRemaining <= 0) {
@@ -81,10 +81,10 @@ END_MSG_MAP()
 
     // make the window topmost and set focus to it
     SetForegroundWindow(m_hWnd);
-
+    
     bHandled = TRUE;
-    return FALSE; //Focus is set manually
-  }
+	return FALSE; //Focus is set manually
+	}
 
 	LRESULT OnCtlColorStatic(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {	
 		if (GetDlgItem(IDC_PIN_MESSAGE).m_hWnd == (HWND)lParam && (invalidPin || attemptsRemaining < 3)) {
@@ -97,22 +97,22 @@ END_MSG_MAP()
 		return (LRESULT)hBr;
 	}
 
-  LRESULT OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
-    CString rawPin;
-    GetDlgItem(IDC_PIN_ENTRY).GetWindowText(rawPin);
+	LRESULT OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {	
+		CString rawPin;
+		GetDlgItem(IDC_PIN_ENTRY).GetWindowText(rawPin);
+    
+		// Check PIN length, do not return if invalid.
+		int len = rawPin.GetLength();
+		if (len == 0) {
+		  std::wstring msg = getEmptyPinErrorMessage();
+		  SetDlgItemText(IDC_PIN_MESSAGE, &msg[0]);
+		  return -1;
+		}
 
-    // Check PIN length, do not return if invalid.
-    int len = rawPin.GetLength();
-    if (len == 0) {
-      std::wstring msg = getEmptyPinErrorMessage();
-      SetDlgItemText(IDC_PIN_MESSAGE, &msg[0]);
-      return -1;
-    }
-
-    pin = _strdup(ATL::CT2CA(rawPin));
-    EndDialog(wID);
-    return 0;
-  }
+		pin = _strdup(ATL::CT2CA(rawPin));
+		EndDialog(wID);
+		return 0;
+	}
 
 	LRESULT OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
 		EndDialog(wID);
@@ -127,7 +127,7 @@ END_MSG_MAP()
     GotoDlgCtrl(GetDlgItem(IDC_PIN_ENTRY));
     if (invalidPin || attemptsRemaining < 3) {
       std::wstring msg = getWrongPinErrorMessage();
-      EstEID_log("Sul on %i katset jäänud", attemptsRemaining);
+      EstEID_log("sul on %i katset jäänud", attemptsRemaining);
       SetDlgItemText(IDC_PIN_MESSAGE, &msg[0]);
     }
 
@@ -135,7 +135,7 @@ END_MSG_MAP()
 
     // Disable text field and OK button of no more tries left. Set the focus to Cancel button.
     if (attemptsRemaining <= 0) {
-	  GetDlgItem(IDC_PIN_ENTRY).EnableWindow(FALSE);
+      GetDlgItem(IDC_PIN_ENTRY).EnableWindow(FALSE);
       GetDlgItem(IDOK).EnableWindow(FALSE);
       GetDlgItem(IDCANCEL).SetFocus();
     }
@@ -159,6 +159,7 @@ private:
   static CPinDialogCNG* s_dialog;
   static std::string    s_pin;
 
+  PluginInstance*       m_pluginObj;
   NCRYPT_KEY_HANDLE     m_hKey;
   SECURITY_STATUS       m_status;
   int                   m_attemptsRemaining;
@@ -168,16 +169,12 @@ private:
 
   int   setAndCheckPIN();
   void  releaseDialog();
-
+  
 public:
   static bool HasPIN();
-  static int  AskPIN(NCRYPT_KEY_HANDLE hKey);
+  static bool AskPIN(PluginInstance* obj, NCRYPT_KEY_HANDLE hKey);
   static bool SetPIN();
   static void ResetPIN();
-  static std::string GetPIN() { return s_pin; }
-
-  NCRYPT_KEY_HANDLE GetKey()          { return m_hKey; }
-  void SetKey(NCRYPT_KEY_HANDLE key)  { m_hKey = key;  }
 
   BEGIN_MSG_MAP(CPinDialogCNG)
     MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -187,7 +184,8 @@ public:
   END_MSG_MAP()
 
   // the only allowed constructor
-  CPinDialogCNG(NCRYPT_KEY_HANDLE hKey) {
+  CPinDialogCNG(PluginInstance* obj, NCRYPT_KEY_HANDLE hKey) {
+    m_pluginObj = obj;
     m_hKey = hKey;
     m_status = -1;
     m_attemptsRemaining = 3;
@@ -196,10 +194,6 @@ public:
   // message handlers
   LRESULT OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
   LRESULT OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
-
-  int GetStatus() {
-    return m_status;
-  }
 
   bool IsError() {
     return (m_status != ERROR_SUCCESS);

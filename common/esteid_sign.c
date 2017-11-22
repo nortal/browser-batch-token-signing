@@ -289,7 +289,7 @@ int EstEID_sighHashWindows(char **signature, unsigned int *signatureLength, CK_S
 		CLOSE_SESSION_AND_RETURN(FAILURE);
 	}
 	if (remainingTries < 3) {
-		sprintf_s(message, 1024, "%s %i", l10n("Tries left:"), remainingTries);
+		sprintf_s(message, 1024, "%s %i", l10n("Katseid jäänud:"), remainingTries);
 	}
 	else {
 		message[0] = 0;
@@ -332,11 +332,11 @@ int EstEID_signHash(char **signature, unsigned int *signatureLength, CK_SLOT_ID 
 			CLOSE_SESSION_AND_RETURN(FAILURE);
 		if (!remainingTries || blocked) {
 			sprintf(EstEID_error, "C_Login error: %s (%li)", pkcs11_error_message(CKR_PIN_LOCKED), CKR_PIN_LOCKED);
-			pinPromptData.alertFunction(pinPromptData.nativeWindowHandle, l10n("PIN2 blocked, cannot sign!"));
+			pinPromptData.alertFunction(pinPromptData.nativeWindowHandle, l10n("PIN2 blokeeritud!"));
 			CLOSE_SESSION_AND_RETURN(FAILURE);
 		}
 		if (remainingTries < 3 || attempt) {
-			sprintf(message, "%s%s %i", (attempt ? l10n("Incorrect PIN2! ") : ""), l10n("Tries left:"), remainingTries);
+			sprintf(message, "%s%s %i", (attempt ? l10n("Vale PIN2! ") : ""), l10n("Katseid jäänud:"), remainingTries);
 		}
 		else {
 			message[0] = 0;

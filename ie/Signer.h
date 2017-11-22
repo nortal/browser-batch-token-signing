@@ -19,6 +19,8 @@
 #pragma once
 
 #include <string>
+#include <Windows.h>
+#include <ncrypt.h>
 
 #define BINARY_SHA1_LENGTH 20
 #define BINARY_SHA224_LENGTH 28
@@ -32,6 +34,8 @@ class Signer {
 public:
 	Signer(const string &_hash, char *_certId) : hash(_hash), certId(_certId){}
 	virtual string sign() = 0;
+  virtual NCRYPT_KEY_HANDLE getCertificatePrivateKey(BOOL* freeKeyHandle) { return NULL; }
+  //virtual ULONG_PTR getCertificatePrivateKey(BOOL* freeKeyHandle) { return NULL; }
 
 	string * getHash() {
 		return &hash;
@@ -40,6 +44,48 @@ public:
 	char * getCertId() {
 		return certId;
 	}
+
+  void setPin(std::string _pin) {
+    pin = _pin;
+  }
+
+  std::string getPin() {
+    return pin;
+  }
+
+protected:
+  string getNextHash(std::string allHashes, int& position, char* separator = ",")
+  {
+    std::string result("");
+    bool found = false;
+
+    // initialize search
+    const char* str = allHashes.c_str();
+    str += position;
+
+    // skip separator in the beginning of search
+    if (*str == *separator)
+    {
+      str++;
+      position++;
+    }
+
+    // store the current position (beginning of substring)
+    const char *begin = str;
+
+    // while separator not found and not at end of string..
+    while (*str != *separator && *str)
+    {
+      // ..go forward in the string.
+      str++;
+      position++;
+    }
+
+    // return what we've got, which is either empty string or a hash string
+    result = std::string(begin, str);
+    return result;
+  }
+  string pin;
 
 private:
 	string hash;

@@ -16,11 +16,8 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "HostExceptions.h"
+#include <string>
 #include "PinDialog.h"
-extern "C" {
-#include "esteid_log.h"
-}
 
 int CPinDialog::attemptsRemaining = 3;
 bool CPinDialog::invalidPin = false;
@@ -33,7 +30,7 @@ std::wstring CPinDialog::getWrongPinErrorMessage() {
 	std::wstring msg = L"";
 
 	if (invalidPin) {
-		msg = L"Vale PIN. ";
+		msg = L"Vale PIN. ";	
 	}
 
 	else {
@@ -53,50 +50,34 @@ std::wstring CPinDialog::getWrongPinErrorMessage() {
 
 	return msg;
 }
+
 std::wstring CPinDialog::getEmptyPinErrorMessage() {
-	return L"PIN on kohustuslik.";
+  return L"PIN on kohustuslik.";
 }
 
 std::wstring CPinDialog::getShortPinErrorMessage() {
-	return L"PIN peab olema 5 numbrit.";
-}
-
-char * CPinDialog::getPin() {
-
-	INT_PTR nResponse = DoModal();
-	if (attemptsRemaining <= 0) {
-		EstEID_log("Pin blokeeritud");
-		throw PinBlockedException();
-	}
-
-	if (nResponse == IDOK) {
-		return pin;
-	}
-	else {
-		EstEID_log("Kasutaja katkestas.");
-		throw UserCancelledException();
-	}
+  return L"PIN peab olema 5 numbrit.";
 }
 
 int CPinDialog::getPin(char * pinOut, int pinLen) {
   // pinLen is not supposed to contain ending NUL!
   // Buffer pointed to by pinOut must be at least pinlen+1 characters long!
-
+	
   INT_PTR nResponse = DoModal();
-  if (attemptsRemaining <= 0) {
-	  EstEID_log("PIN blokeeritud.");
+	if (attemptsRemaining <= 0) {
+		EstEID_log("Pin blokeeritud");
     nResponse = PIN_ERROR_BLOCKED;
-  }
+	}
 
-  if (nResponse == IDOK) {
+	if (nResponse == IDOK) {
     strncpy(pinOut, pin, pinLen);
     pinOut[pinLen] = '\0';
-  }
-  else if (nResponse == IDCANCEL) {
-	  EstEID_log("Kasutaja katkestas.");
-  }
+	}
+	else if (nResponse == IDCANCEL) {
+		EstEID_log("Kasutaja katkestas.");
+	}
   else if (nResponse == PIN_ERROR_BLOCKED) {
-	  EstEID_log("PIN blokeeritud.");
+    EstEID_log("PIN blokeeritud.");
   }
   else if (nResponse < 0) {
     // Failed to create the dialog, error will be returned. Should not happen.
@@ -115,9 +96,10 @@ int CPinDialog::getAttemptsRemaining() {
 }
 
 void CPinDialog::setInvalidPin(bool wasPinInvalid) {
-  invalidPin = wasPinInvalid;
+	invalidPin = wasPinInvalid;
   if (wasPinInvalid) {
     attemptsRemaining--;
   }
   updateControls();
 }
+
