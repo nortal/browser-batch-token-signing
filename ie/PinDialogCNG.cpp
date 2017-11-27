@@ -18,20 +18,38 @@
 
 #include <string>
 #include "HostExceptions.h"
-#include "PinDialog.h"
-#include <atlstr.h>
+#include "Labels.h"
+#include "Logger.h"
+#include "PinDialogCNG.h"
 
-CPinDialogCNG* CPinDialogCNG::s_dialog = NULL;
-std::string CPinDialogCNG::s_pin = "";
+PinDialogCNG* PinDialogCNG::s_dialog = NULL;
+std::string PinDialogCNG::s_pin = "";
 
 
-bool CPinDialogCNG::HasPIN() {
+std::wstring getSignPinLabel() {
+	std::wstring label = Labels::l10n.get("sign PIN");
+	size_t start_pos = 0;
+	while ((start_pos = label.find(L"@PIN@", start_pos)) != std::string::npos) {
+		label.replace(start_pos, 5, L"PIN2");
+		start_pos += 3;
+	}
+	return label;
+}
+
+PinDialogCNG::PinDialogCNG(NCRYPT_KEY_HANDLE hKey)
+	: PinDialog(getSignPinLabel()) {
+	m_hKey = hKey;
+	m_status = -1;
+	m_attemptsRemaining = 3;
+}
+
+bool PinDialogCNG::HasPIN() {
   return (s_pin != "");
 }
 
-int CPinDialogCNG::AskPIN(NCRYPT_KEY_HANDLE hKey) {
+int PinDialogCNG::AskPIN(NCRYPT_KEY_HANDLE hKey) {
   if (s_dialog == NULL) {
-    s_dialog = new CPinDialogCNG(hKey);
+    s_dialog = new PinDialogCNG(hKey);
     s_pin = "";
   }
 
@@ -49,7 +67,7 @@ int CPinDialogCNG::AskPIN(NCRYPT_KEY_HANDLE hKey) {
   return result;
 }
 
-bool CPinDialogCNG::SetPIN() {
+bool PinDialogCNG::SetPIN() {
   bool result = false;
   if (s_dialog) {
     result = (s_dialog->setAndCheckPIN() == ERROR_SUCCESS);
@@ -57,21 +75,21 @@ bool CPinDialogCNG::SetPIN() {
   return result;
 }
 
-void CPinDialogCNG::ResetPIN(void) {
+void PinDialogCNG::ResetPIN(void) {
   if (s_dialog) {
     s_dialog->releaseDialog();
   }
   s_pin = "";
 }
 
-void CPinDialogCNG::releaseDialog() {
+void PinDialogCNG::releaseDialog() {
   if (s_dialog) {
     delete s_dialog;
     s_dialog = NULL;
   }
 }
 
-LRESULT CPinDialogCNG::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
+LRESULT PinDialogCNG::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
   CString rawPin;
   GetDlgItem(IDC_PIN_FIELD).GetWindowText(rawPin);
 
@@ -113,7 +131,7 @@ LRESULT CPinDialogCNG::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOO
   return 0;
 }
 
-LRESULT CPinDialogCNG::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
+LRESULT PinDialogCNG::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
   _log("CNG mass signing failed to ask PIN, user canceled.");
   //handleErrorWithCode(SCARD_W_CANCELLED_BY_USER, "AskPIN", m_pluginObj);
   
@@ -121,7 +139,7 @@ LRESULT CPinDialogCNG::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl,
   return 0;
 }
 
-int CPinDialogCNG::setAndCheckPIN(void) {
+int PinDialogCNG::setAndCheckPIN(void) {
 /* Return values:
 *   ERROR_SUCCESS         Valid PIN (or PIN not checked)
 *   SCARD_W_WRONG_CHV     Wrong PIN.

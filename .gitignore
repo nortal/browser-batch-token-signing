@@ -12,3 +12,4 @@ plugin-win.res
 *.pkg
 *~
 /tmp
+/*.suo

@@ -59,6 +59,7 @@ std::wstring PinDialog::getWrongPinErrorMessage() {
 std::wstring PinDialog::getEmptyPinErrorMessage() {
 	return L"PIN on kohustuslik.";
 }
+
 LRESULT PinDialog::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
 	CString rawPin;
 	GetDlgItemText(IDC_PIN_FIELD, rawPin);
@@ -89,13 +90,12 @@ char* PinDialog::getPin() {
 void PinDialog::setAttemptsRemaining(int _attemptsRemaining) {
 	attemptsRemaining = _attemptsRemaining;
 }
-
 void PinDialog::setInvalidPin(bool wasPinInvalid) {
   invalidPin = wasPinInvalid;
   if (wasPinInvalid) {
     attemptsRemaining--;
   }
-  //updateControls();
+  updateControls();
 }
 
 // common controls

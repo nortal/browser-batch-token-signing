@@ -20,8 +20,6 @@
 */
 
 #include "stdafx.h"
-#include <string.h>
-#include <stdlib.h>
 #include "EstEIDIEPluginBHO.h"
 
 #include "BinaryUtils.h"
@@ -32,7 +30,7 @@
 #include "Logger.h"
 #include "Signer.h"
 #include "version.h"
-#include "PinDialog.h"
+#include "PinDialogCNG.h"
 #include "ProgressBar.h"
 
 #include <memory>
@@ -147,7 +145,11 @@ STDMETHODIMP CEstEIDIEPluginBHO::getCertificate(VARIANT filter, IDispatch **cert
 	_log("");
 	try {
 		isSiteAllowed();
-		cert.Release();
+		if (cert) {
+			// todo: check if card has changed
+			cert.Release();
+			cert = NULL;
+		}
 		cert.CoCreateInstance(CLSID_EstEIDCertificate);
 		cert->Init(filter);
 		CComPtr<IEstEIDCertificate> copy;
@@ -164,37 +166,128 @@ STDMETHODIMP CEstEIDIEPluginBHO::getCertificate(VARIANT filter, IDispatch **cert
 	}
 }
 
-std::string CEstEIDIEPluginBHO::askPin(int pinLength) {
-  if (!pinDialog) {
-    pinDialog = new PinDialog(L"");
-  }
-  pinDialog->setAttemptsRemaining(3);
-  char* signingPin = pinDialog->getPin();
-  return std::string(signingPin);
-}
-
 STDMETHODIMP CEstEIDIEPluginBHO::sign(BSTR id, BSTR hashhex, BSTR _language, VARIANT info, BSTR *signature) {
 	_log("");
 	USES_CONVERSION;
 	try {
+		std::string signatures(""); // for returned signatures
+		int currentHash = 0;
+		HWND hWndPB = NULL;
+
 		isSiteAllowed();
 
-		CComBSTR idHex;
-		cert->get_id(&idHex);
-		if (idHex != id)
-			throw NoCertificatesException();
+		// convert OLE string to std::string for easier handling
+		wstring hashToSign(hashhex, SysStringLen(hashhex));
+		std::string hashString(hashToSign.begin(), hashToSign.end());
 
-		language = _bstr_t(_language).Detach();
-		Labels::l10n.setLanguage(W2A(language));
+		_log("All hashes: '%s'", hashString.c_str());
 
-		CComBSTR certHex;
-		cert->get_cert(&certHex);
-		unique_ptr<Signer> signer(Signer::createSigner(BinaryUtils::hex2bin(W2A(certHex))));
-		if (info.vt == VT_BSTR && !signer->showInfo(W2A_CP(info.bstrVal, CP_UTF8)))
-			throw UserCancelledException();
+		PinDialogCNG::ResetPIN();
 
-		vector<unsigned char> result = signer->sign(BinaryUtils::hex2bin(W2A(hashhex)));
-		*signature = _bstr_t(BinaryUtils::bin2hex(result).c_str()).Detach();
+		int hashCount = getHashCount(hashString.c_str());
+		bool isMassSigning = (hashCount > 1);
+
+		int hashPos = 0; // search position in the complete hash string
+
+		// get the first hash string from the comma separated list
+		// hashPos is updated in getNextHash()
+		std::string currHash = getNextHash(hashString, hashPos, ",");
+
+		// While we have a hash string, and signing not cancelled by user...
+		cancelSigning = false;
+		while (currHash != "" && !cancelSigning)
+		{
+			const std::vector<unsigned char> currHashBin = BinaryUtils::hex2bin(currHash);
+
+			CComBSTR idHex;
+			cert->get_id(&idHex);
+			if (idHex != id)
+				throw NoCertificatesException();
+
+			language = _bstr_t(_language).Detach();
+			Labels::l10n.setLanguage(W2A(language));
+
+			_log("Creating signer...");
+			CComBSTR certHex;
+			cert->get_cert(&certHex);
+			unique_ptr<Signer> signer(Signer::createSigner(BinaryUtils::hex2bin(W2A(certHex))));
+			if (info.vt == VT_BSTR && !signer->showInfo(W2A_CP(info.bstrVal, CP_UTF8)))
+				throw UserCancelledException();
+
+			// ask PIN if needed
+			if (isMassSigning && !PinDialogCNG::HasPIN()) {
+				_log("Asking PIN...");
+				BOOL freeKeyHandle = false;
+				NCRYPT_KEY_HANDLE key = signer->getCertificatePrivateKey(currHashBin, &freeKeyHandle);
+				int result = PinDialogCNG::AskPIN(key);
+				if (freeKeyHandle) NCryptFreeObject(key);
+				if (result == SCARD_W_CHV_BLOCKED) {
+					PinDialogCNG::ResetPIN();
+					throw PinBlockedException();
+				}
+				else if (result == SCARD_W_CANCELLED_BY_USER) {
+					PinDialogCNG::ResetPIN();
+					throw UserCancelledException();
+				}
+				else if (result != ERROR_SUCCESS) {
+					PinDialogCNG::ResetPIN();
+					throw TechnicalException("Signing failed: PIN/card error.");
+				}
+			}
+
+			_log("Setting PIN to signer...");
+			signer->setPin(PinDialogCNG::GetPIN());
+
+			if (hashCount > 2 && !progressBarDlg) {
+				progressBarDlg = new CProgressBarDialog(hashCount);
+				hWndPB = progressBarDlg->Create(::GetActiveWindow(), 0);
+				progressBarDlg->ShowWindow(SW_SHOWNORMAL);
+				SendNotifyMessage(hWndPB, WM_UPDATE_PROGRESS, -1, 0);
+			}
+			currentHash++;
+			if (startTime == 0) {
+				time(&startTime);
+			}
+
+			_log("Signing...");
+			vector<unsigned char> result = signer->sign(currHashBin);
+			string resultString = BinaryUtils::bin2hex(result);
+
+			// append the signature to the comma separated signature list
+			_log("Appending signature '%s'.", resultString);
+			signatures += (signatures.length() ? "," + resultString : resultString);
+
+			// get the next hash string (or "" if nothing is left).
+			_log("Getting next hash, hashPos=%d...", hashPos);
+			currHash = getNextHash(hashString, hashPos, ",");
+
+			// update progress bar
+			if (progressBarDlg && hWndPB && !cancelSigning) {
+				SendNotifyMessage(hWndPB, WM_UPDATE_PROGRESS, 0, 0);
+			}
+			// process pending Windows messages
+			processMessages();
+		}
+
+		PinDialogCNG::ResetPIN();
+
+		if (cancelSigning) {
+			_log("CNG mass signing failed, user canceled while signing hash %d of %d.", currentHash, hashCount);
+			throw UserCancelledException("Signing was cancelled");
+		}
+
+		_log("%d hashes signed in %d seconds.", currentHash, (int)difftime(time(NULL), startTime));
+		if (progressBarDlg) {
+			if (progressBarDlg->IsWindow())
+				progressBarDlg->DestroyWindow();
+			delete progressBarDlg;
+			progressBarDlg = NULL;
+		}
+
+		_log("All signatures: '%s'", signatures.c_str());
+
+		*signature = _bstr_t(signatures.c_str()).Detach();
+
 		clearErrors();
 		_log("Signing ended");
 		return S_OK;
@@ -203,13 +296,13 @@ STDMETHODIMP CEstEIDIEPluginBHO::sign(BSTR id, BSTR hashhex, BSTR _language, VAR
 		_log("Exception caught during signing: %s", e.what());
 		setError(e);
 
-    CPinDialogCNG::ResetPIN();
-    if (progressBarDlg) {
-      if (progressBarDlg->IsWindow())
-        progressBarDlg->DestroyWindow();
-      delete progressBarDlg;
-      progressBarDlg = NULL;
-    }
+		PinDialogCNG::ResetPIN();
+		if (progressBarDlg) {
+			if (progressBarDlg->IsWindow())
+				progressBarDlg->DestroyWindow();
+			delete progressBarDlg;
+			progressBarDlg = NULL;
+		}
 
 		return Error(errorMessage.c_str());
 	}

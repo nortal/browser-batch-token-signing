@@ -22,16 +22,19 @@
 #include <atlstr.h>
 #include <atlctl.h>
 #include <string>
+#include "Labels.h"
 #include "ProgressBar.h"
 
 using namespace ATL;
 
-extern bool cancelSigning; // located in plugin-class.c
+extern bool cancelSigning; // located in EstEIDIEPluginBHO.cpp
 
 LRESULT CProgressBarDialog::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
   CAxDialogImpl<CProgressBarDialog>::OnInitDialog(uMsg, wParam, lParam, bHandled);
   ATLVERIFY(CenterWindow());
   
+  ::SetWindowText(m_hWnd, Labels::l10n.get("mass signing").c_str());
+
   // Set progress bar range. LOWORD contains the min value, HIWORD the max value.
   LPARAM range = MAKELONG(0, m_numberOfItems);
   ::SendDlgItemMessage(m_hWnd, IDC_PROGRESS_BAR, PBM_SETRANGE, 0, range);
@@ -41,6 +44,7 @@ LRESULT CProgressBarDialog::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam
 
   // make the window topmost and set focus to it
   SetForegroundWindow(m_hWnd);
+  SetDlgItemText(IDCANCEL, Labels::l10n.get("cancel").c_str());
   GotoDlgCtrl(GetDlgItem(IDCANCEL));
 
   bHandled = TRUE;
@@ -68,7 +72,7 @@ LRESULT CProgressBarDialog::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWn
 
 void CProgressBarDialog::updateProgressBarMessage() {
   WCHAR buf[100] = { 0 };
-  wsprintf(buf, L"Creating signature %d of %d...", m_currentItem, m_numberOfItems);
+  wsprintf(buf, Labels::l10n.get("mass sign create").c_str(), m_currentItem, m_numberOfItems);
   SetDlgItemText(IDC_PROGRESS_TEXT, buf);
 
   Invalidate();
@@ -76,5 +80,5 @@ void CProgressBarDialog::updateProgressBarMessage() {
 
 void CProgressBarDialog::updateProgressBar() {
   ::SendDlgItemMessage(m_hWnd, IDC_PROGRESS_BAR, PBM_STEPIT, 0, 0);
-  SetDlgItemText(IDCANCEL, L"Cancel");
+  SetDlgItemText(IDCANCEL, Labels::l10n.get("cancel").c_str());
 }

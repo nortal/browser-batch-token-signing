@@ -27,5 +27,5 @@ public:
 	NCRYPT_KEY_HANDLE getCertificatePrivateKey(const std::vector<unsigned char> &digest, BOOL* freeKeyHandle);
 
 private:
-  SECURITY_STATUS setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key);
+	SECURITY_STATUS setPinForSigning(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE key);
 };

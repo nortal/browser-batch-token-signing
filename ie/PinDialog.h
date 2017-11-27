@@ -23,17 +23,9 @@
 
 #include <atlbase.h>
 #include <atlhost.h>
+#include <atlstr.h>
 #include <atlctl.h>
-#include <ncrypt.h>
 #include <string>
-
-#define PIN_ERROR_GENERAL   -1
-#define PIN_ERROR_BLOCKED   -2
-#define PIN_ERROR_EMPTY_PIN -3
-
-#ifndef PIN2_LENGTH          
-#define PIN2_LENGTH          5
-#endif
 
 class PinDialog : public CAxDialogImpl<PinDialog>
 {
@@ -58,70 +50,44 @@ protected:
 	LRESULT OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
 	LRESULT OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
 
-private:
-	char* pin;
-	std::wstring label;
+	LRESULT OnCtlColorStatic(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {	
+		if (GetDlgItem(IDC_PIN_MESSAGE).m_hWnd == (HWND)lParam && (invalidPin || attemptsRemaining < 3)) {
+			SetTextColor((HDC)wParam, RGB(255, 0, 0));
+		}
+
+		SetBkColor((HDC)wParam, RGB(240, 240, 240));
+
+		HBRUSH  hBr = (HBRUSH)CreateSolidBrush(RGB(240, 240, 240));
+		return (LRESULT)hBr;
+	}
+
+  void updateControls() {
+    GotoDlgCtrl(GetDlgItem(IDC_PIN_FIELD));
+    if (invalidPin || attemptsRemaining < 3) {
+      std::wstring msg = getWrongPinErrorMessage();
+      _log("Sul on %i katset jäänud", attemptsRemaining);
+      SetDlgItemText(IDC_PIN_MESSAGE, &msg[0]);
+    }
+
+	SetDlgItemText(IDC_PIN_FIELD, L"");
+
+    // Disable text field and OK button of no more tries left. Set the focus to Cancel button.
+    if (attemptsRemaining <= 0) {
+	  GetDlgItem(IDC_PIN_FIELD).EnableWindow(FALSE);
+      GetDlgItem(IDOK).EnableWindow(FALSE);
+      GetDlgItem(IDCANCEL).SetFocus();
+    }
+
+    // make the window topmost and set focus to it
+    SetForegroundWindow(m_hWnd);
+  }
 
 protected:
   static int attemptsRemaining;
   static bool invalidPin;
+  char* pin;
+  int pinLen;
+  std::wstring label;
   std::wstring getWrongPinErrorMessage();
   std::wstring getEmptyPinErrorMessage();
-};
-
-class CPinDialogCNG : public PinDialog {
-private:
-  static CPinDialogCNG* s_dialog;
-  static std::string    s_pin;
-
-  NCRYPT_KEY_HANDLE     m_hKey;
-  SECURITY_STATUS       m_status;
-  int                   m_attemptsRemaining;
-
-  // hide the default constructor
-  CPinDialogCNG() : PinDialog(L"") {}
-
-  int   setAndCheckPIN();
-  void  releaseDialog();
-
-public:
-  static bool HasPIN();
-  static int  AskPIN(NCRYPT_KEY_HANDLE hKey);
-  static bool SetPIN();
-  static void ResetPIN();
-  static std::string GetPIN() { return s_pin; }
-
-  NCRYPT_KEY_HANDLE GetKey()          { return m_hKey; }
-  void SetKey(NCRYPT_KEY_HANDLE key)  { m_hKey = key;  }
-
-  BEGIN_MSG_MAP(CPinDialogCNG)
-    COMMAND_HANDLER(IDOK, BN_CLICKED, OnClickedOK)
-    COMMAND_HANDLER(IDCANCEL, BN_CLICKED, OnClickedCancel)
-  END_MSG_MAP()
-
-  // the only allowed constructor
-  CPinDialogCNG(NCRYPT_KEY_HANDLE hKey) : PinDialog(L"") {
-    m_hKey = hKey;
-    m_status = -1;
-    m_attemptsRemaining = 3;
-  }
-
-  // message handlers
-  LRESULT OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
-  LRESULT OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
-
-  int GetStatus() {
-    return m_status;
-  }
-
-  bool IsError() {
-    return (m_status != ERROR_SUCCESS);
-  }
-  bool IsPinValid() {
-    return (m_status == ERROR_SUCCESS);
-  }
-  bool IsCardBlocked() {
-    return (m_status == SCARD_W_CHV_BLOCKED);
-  }
-
 };

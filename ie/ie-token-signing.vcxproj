@@ -119,7 +119,7 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <RegisterOutput>true</RegisterOutput>
+      <RegisterOutput>false</RegisterOutput>
       <AdditionalDependencies>Uafxcwd.lib;Libcmtd.lib;Ncrypt.lib;Cryptui.lib;crypt32.lib;winscard.lib</AdditionalDependencies>
       <ModuleDefinitionFile>.\esteid-plugin-ie.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -154,7 +154,7 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <RegisterOutput>true</RegisterOutput>
+      <RegisterOutput>false</RegisterOutput>
       <AdditionalDependencies>Uafxcwd.lib;Libcmtd.lib;Ncrypt.lib;Cryptui.lib;crypt32.lib;winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>.\esteid-plugin-ie.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -186,16 +186,13 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <RegisterOutput>true</RegisterOutput>
+      <RegisterOutput>false</RegisterOutput>
       <AdditionalDependencies>Uafxcw.lib;Libcmt.lib;Ncrypt.lib;Cryptui.lib;crypt32.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>.\esteid-plugin-ie.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <IgnoreSpecificDefaultLibraries>Uafxcw.lib;Libcmtd.lib</IgnoreSpecificDefaultLibraries>
     </Link>
-    <ProjectReference>
-      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
-    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -220,7 +217,7 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <RegisterOutput>true</RegisterOutput>
+      <RegisterOutput>false</RegisterOutput>
       <AdditionalDependencies>Uafxcw.lib;Libcmt.lib;Ncrypt.lib;Cryptui.lib;crypt32.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>.\esteid-plugin-ie.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -270,6 +267,7 @@
     <ClInclude Include="NativeCertificateSelector.h" />
     <ClInclude Include="NativeSigner.h" />
     <ClInclude Include="PinDialog.h" />
+    <ClInclude Include="PinDialogCNG.h" />
     <ClInclude Include="..\common\PKCS11CardManager.h" />
     <ClInclude Include="PKCS11CertificateSelector.h" />
     <ClInclude Include="..\common\PKCS11Path.h" />

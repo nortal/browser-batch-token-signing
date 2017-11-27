@@ -28,10 +28,10 @@
 #define MAJOR_VER 1
 #endif
 #ifndef MINOR_VER
-#define MINOR_VER 0
+#define MINOR_VER 2
 #endif
 #ifndef RELEASE_VER
-#define RELEASE_VER 1
+#define RELEASE_VER 0
 #endif
 #ifndef BUILD_VER
 #define BUILD_VER 0

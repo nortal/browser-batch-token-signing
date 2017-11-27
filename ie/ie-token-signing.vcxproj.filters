@@ -105,6 +105,9 @@
     <ClInclude Include="..\common\PKCS11Path.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PinDialogCNG.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="ProgressBar.h">
       <Filter>Header Files</Filter>
     </ClInclude>

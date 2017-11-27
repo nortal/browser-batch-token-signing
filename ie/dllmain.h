@@ -1,6 +1,6 @@
 // dllmain.h : Declaration of module class.
 
-class CesteidpluginieModule : public ATL::CAtlDllModuleT< CesteidpluginieModule > 
+class CesteidpluginieModule : public ATL::CAtlDllModuleT< CesteidpluginieModule >
 {
 public :
 	DECLARE_LIBID(LIBID_esteidpluginieLib)
