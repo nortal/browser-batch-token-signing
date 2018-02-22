@@ -24,8 +24,6 @@
 
 #include "BinaryUtils.h"
 #include "CertificateSelector.h"
-#include "esteid_error.h"
-#include "HostExceptions.h"
 #include "Labels.h"
 #include "Logger.h"
 #include "Signer.h"
@@ -315,9 +313,9 @@ void CEstEIDIEPluginBHO::clearErrors() {
 }
 
 void CEstEIDIEPluginBHO::setError(const BaseException &exception) {
-	errorCode = exception.getErrorCode();
+	errorCode = exception.toInt();
 	errorMessage.assign(exception.what());
-	_log("Set error: %s (HEX %Xh, DEC %u)", errorMessage.c_str(), exception.getErrorCode(), exception.getErrorCode());
+	_log("Set error: %s (HEX %Xh, DEC %u)", errorMessage.c_str(), errorCode, errorCode);
 }
 
 std::string CEstEIDIEPluginBHO::getNextHash(std::string allHashes, int& position, char* separator)
