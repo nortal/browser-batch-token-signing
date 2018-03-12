@@ -55,6 +55,9 @@
     <ClCompile Include="EstEIDCertificate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="esteidpluginie_i.h">
@@ -120,7 +123,7 @@
     <ClInclude Include="EstEIDCertificate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BinaryUtils.h">
+    <ClInclude Include="..\common\BinaryUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\PKCS11Signer.h">
@@ -142,7 +145,6 @@
     <None Include="esteid-plugin-ie.rgs" />
     <None Include="EstEIDCertificate.rgs" />
     <None Include="EstEIDIEPluginBHO.rgs" />
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
