@@ -15,36 +15,14 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
 #pragma once
 
-#include "stdafx.h"
-
-#include <string>
-#include <ncrypt.h>
-#include <WinCrypt.h>
-#include <vector>
-
-class Signer {
-public:
-	virtual ~Signer() = default;
-	virtual NCRYPT_KEY_HANDLE getCertificatePrivateKey(const std::vector<unsigned char> &digest, BOOL* freeKeyHandle) { return NULL; }
-
-	static Signer* createSigner(const std::vector<unsigned char> &cert);
-	bool showInfo(const std::string &msg);
-	virtual std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) = 0;
-
-	std::string getPin() {
-		return pin;
-	}
-
-	void setPin(std::string _pin) {
-		pin = _pin;
-	}
-
-protected:
-	Signer(const std::vector<unsigned char> &_cert) : cert(_cert) {}
-
-	std::string pin;
+class BatchSigner {
+private:
 	std::vector<unsigned char> cert;
+
+public:
+	BatchSigner(const std::vector<unsigned char> &cert);
+
+	std::vector<std::vector<unsigned char>> sign(std::string hashList, std::string info);
 };

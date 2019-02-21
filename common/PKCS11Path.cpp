@@ -89,16 +89,25 @@ std::vector<std::string> PKCS11Path::atrList() {
 
 PKCS11Path::Params PKCS11Path::getPkcs11ModulePath() {
 #ifdef _WIN32
+    PWSTR programFilesX86 = 0;
+    SHGetKnownFolderPath(FOLDERID_ProgramFilesX86, 0, NULL, &programFilesX86);
+    std::wstring programFilesPath = programFilesX86;
+    CoTaskMemFree(programFilesX86);
+
     // Use PKCS11 driver on windows to avoid PIN buffering
-    static const std::string litPath = [] {
-        PWSTR programFilesX86 = 0;
-        SHGetKnownFolderPath(FOLDERID_ProgramFilesX86, 0, NULL, &programFilesX86);
-        std::wstring path = programFilesX86;
-        CoTaskMemFree(programFilesX86);
-        if (PathFileExistsW((path + L"\\PWPW\\pwpw-card-pkcs11.dll").c_str()))
+    static const std::string litPath = [programFilesPath] {
+        std::wstring path;
+        if (PathFileExistsW((programFilesPath + L"\\PWPW\\pwpw-card-pkcs11.dll").c_str()))
             path += L"\\PWPW\\pwpw-card-pkcs11.dll";
         else
             path += L"\\CryptoTech\\CryptoCard\\CCPkiP11.dll";
+        int size = WideCharToMultiByte(CP_UTF8, 0, path.c_str(), DWORD(path.size()), nullptr, 0, nullptr, nullptr);
+        std::string result(size, 0);
+        WideCharToMultiByte(CP_UTF8, 0, path.c_str(), DWORD(path.size()), &result[0], size, nullptr, nullptr);
+        return result;
+    }();
+    static const std::string ocsPath = [programFilesPath] {
+        std::wstring path = programFilesPath + L"\\IDEMIA\\AWP\\DLLs\\OcsCryptoki.dll";
         int size = WideCharToMultiByte(CP_UTF8, 0, path.c_str(), DWORD(path.size()), nullptr, 0, nullptr, nullptr);
         std::string result(size, 0);
         WideCharToMultiByte(CP_UTF8, 0, path.c_str(), DWORD(path.size()), &result[0], size, nullptr, nullptr);
@@ -130,6 +139,10 @@ PKCS11Path::Params PKCS11Path::getPkcs11ModulePath() {
     static const std::map<std::string, Params> m = {
 #ifdef _WIN32
         {"3BFD1800008031FE4553434536302D43443134352D46CD", {"C:\\Windows\\System32\\aetpkss1.dll", "PIN", "PIN"}},
+        // Note: The IDEMIA ID card driver does not allow the PIN2 code to be cached
+        // (PIN_CACHE_POLICY_TYPE = PinCacheAlwaysPrompt).
+        // Therefore, PKCS11 must be used for batch signing.
+        {"3BDB960080B1FE451F830012233F536549440F9000F1", {ocsPath, "PIN", "PIN"}},
 #else
         {"3BFE1800008031FE454573744549442076657220312E30A8", {estPath, "PIN1", "PIN2"}}, //ESTEID_V3_COLD_DEV1_ATR
         {"3BFE1800008031FE45803180664090A4561B168301900086", {estPath, "PIN1", "PIN2"}}, //ESTEID_V3_WARM_DEV1_ATR

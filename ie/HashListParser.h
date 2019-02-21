@@ -1,5 +1,5 @@
 /*
-* Estonian ID card plugin for web browsers
+* Chrome Token Signing Native Host
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -15,28 +15,14 @@
 * License along with this library; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
 #pragma once
 
-#include <Windows.h>
-
-class ProgressBar
+class HashListParser
 {
-private:
-	int m_numberOfItems;
-	int m_currentItem;
-	volatile bool m_shouldCancel;
-	HANDLE m_initializedEvent;
-	HWND m_hwndDlg;
-
 public:
-	ProgressBar(int numberOfItems);
-	~ProgressBar();
-
-	void initializeDialogHandle(HWND hwndDlg);
-	void updateProgress();
-	bool shouldCancel();
+	static std::vector<std::vector<unsigned char>> parse(std::string hashList);
 
 private:
-	static DWORD WINAPI DialogThreadFunction(LPVOID lpParam);
-	static INT_PTR CALLBACK DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static std::string getNextHash(std::string allHashes, int& position);
 };

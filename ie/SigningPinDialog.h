@@ -1,5 +1,5 @@
 /*
-* Estonian ID card plugin for web browsers
+* Chrome Token Signing Native Host
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -15,28 +15,24 @@
 * License along with this library; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
 #pragma once
 
-#include <Windows.h>
+#include "stdafx.h"
+#include <string>
 
-class ProgressBar
+#define PIN2_LENGTH 5
+
+// SigningPinDialog is equivalent to PinDialog, but allows 5-digit PIN2 codes to be entered
+// and focuses itself when shown.
+class SigningPinDialog
 {
-private:
-	int m_numberOfItems;
-	int m_currentItem;
-	volatile bool m_shouldCancel;
-	HANDLE m_initializedEvent;
-	HWND m_hwndDlg;
-
 public:
-	ProgressBar(int numberOfItems);
-	~ProgressBar();
-
-	void initializeDialogHandle(HWND hwndDlg);
-	void updateProgress();
-	bool shouldCancel();
+	static std::string getPin(const std::wstring &label, const std::wstring &message, HWND pParent = NULL);
 
 private:
-	static DWORD WINAPI DialogThreadFunction(LPVOID lpParam);
+	SigningPinDialog() {}
 	static INT_PTR CALLBACK DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	std::wstring label, message;
+	std::string pin;
 };

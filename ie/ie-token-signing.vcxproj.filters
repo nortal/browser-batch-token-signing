@@ -37,9 +37,6 @@
     <ClCompile Include="ProgressBar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PinDialogCNG.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Signer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -56,6 +53,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HashListParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BatchSigner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SigningPinDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -108,9 +114,6 @@
     <ClInclude Include="..\common\PKCS11Path.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PinDialogCNG.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ProgressBar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -132,10 +135,20 @@
     <ClInclude Include="PinDialogResource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HashListParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BatchSigner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SigningPinDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="esteid-plugin-ie.rc" />
     <ResourceCompile Include="PinDialog.rc" />
+    <ResourceCompile Include="ProgressBar.rc" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="esteidpluginie.idl" />

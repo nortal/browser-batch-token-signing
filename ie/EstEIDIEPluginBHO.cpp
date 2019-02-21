@@ -22,50 +22,18 @@
 #include "stdafx.h"
 #include "EstEIDIEPluginBHO.h"
 
+#include "BatchSigner.h"
 #include "BinaryUtils.h"
 #include "CertificateSelector.h"
 #include "Labels.h"
 #include "Logger.h"
 #include "Signer.h"
 #include "version.h"
-#include "PinDialogCNG.h"
-#include "ProgressBar.h"
 
 #include <memory>
 #include <string.h>
 
-
 using namespace std;
-
-bool cancelSigning;                  // can be modified in progress bar dialog
-CProgressBarDialog* progressBarDlg;  // may need to be accesses in request handler
-static time_t startTime;             // for performance logging
-
-int getHashCount(const char* allHashes) {
-  // calculate the number of hashes in the given hash string
-  int len = 0;
-  int count = 0;
-  if (allHashes) {
-    while (allHashes[len]) {
-      if (allHashes[len] == ',') {
-        count++;
-      }
-      len++;
-    }
-    count++;
-  }
-  return count;
-}
-
-void processMessages() {
-  //int cnt = 0;
-  MSG msg;
-  while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))// && cnt++ < 10)
-  {
-    ::TranslateMessage(&msg);
-    ::DispatchMessage(&msg);
-  }
-}
 
 STDMETHODIMP CEstEIDIEPluginBHO::SetSite(IUnknown* pUnkSite) {
 	_log("");
@@ -167,124 +135,43 @@ STDMETHODIMP CEstEIDIEPluginBHO::getCertificate(VARIANT filter, IDispatch **cert
 STDMETHODIMP CEstEIDIEPluginBHO::sign(BSTR id, BSTR hashhex, BSTR _language, VARIANT info, BSTR *signature) {
 	_log("");
 	USES_CONVERSION;
-	try {
-		std::string signatures(""); // for returned signatures
-		int currentHash = 0;
-		HWND hWndPB = NULL;
 
+	// convert OLE string to std::string for easier handling
+	wstring hashToSign(hashhex, SysStringLen(hashhex));
+	std::string hashList(hashToSign.begin(), hashToSign.end());
+
+	try {
 		isSiteAllowed();
 
-		// convert OLE string to std::string for easier handling
-		wstring hashToSign(hashhex, SysStringLen(hashhex));
-		std::string hashString(hashToSign.begin(), hashToSign.end());
+		CComBSTR idHex;
+		cert->get_id(&idHex);
+		if (idHex != id)
+			throw NoCertificatesException();
 
-		_log("All hashes: '%s'", hashString.c_str());
+		language = _bstr_t(_language).Detach();
+		Labels::l10n.setLanguage(W2A(language));
 
-		PinDialogCNG::ResetPIN();
+		CComBSTR certHex;
+		cert->get_cert(&certHex);
+		vector<unsigned char> certBin = BinaryUtils::hex2bin(W2A(certHex));
+		BatchSigner batchSigner(certBin);
 
-		int hashCount = getHashCount(hashString.c_str());
-		bool isMassSigning = (hashCount > 1);
-
-		int hashPos = 0; // search position in the complete hash string
-
-		// get the first hash string from the comma separated list
-		// hashPos is updated in getNextHash()
-		std::string currHash = getNextHash(hashString, hashPos, ",");
-
-		// While we have a hash string, and signing not cancelled by user...
-		cancelSigning = false;
-		while (currHash != "" && !cancelSigning)
+		string infoString("");
+		if (info.vt == VT_BSTR)
 		{
-			const std::vector<unsigned char> currHashBin = BinaryUtils::hex2bin(currHash);
-
-			CComBSTR idHex;
-			cert->get_id(&idHex);
-			if (idHex != id)
-				throw NoCertificatesException();
-
-			language = _bstr_t(_language).Detach();
-			Labels::l10n.setLanguage(W2A(language));
-
-			_log("Creating signer...");
-			CComBSTR certHex;
-			cert->get_cert(&certHex);
-			unique_ptr<Signer> signer(Signer::createSigner(BinaryUtils::hex2bin(W2A(certHex))));
-			if (info.vt == VT_BSTR && !signer->showInfo(W2A_CP(info.bstrVal, CP_UTF8)))
-				throw UserCancelledException();
-
-			// ask PIN if needed
-			if (isMassSigning && !PinDialogCNG::HasPIN()) {
-				_log("Asking PIN...");
-				BOOL freeKeyHandle = false;
-				NCRYPT_KEY_HANDLE key = signer->getCertificatePrivateKey(currHashBin, &freeKeyHandle);
-				int result = PinDialogCNG::AskPIN(key);
-				if (freeKeyHandle) NCryptFreeObject(key);
-				if (result == SCARD_W_CHV_BLOCKED) {
-					PinDialogCNG::ResetPIN();
-					throw PinBlockedException();
-				}
-				else if (result == SCARD_W_CANCELLED_BY_USER) {
-					PinDialogCNG::ResetPIN();
-					throw UserCancelledException();
-				}
-				else if (result != ERROR_SUCCESS) {
-					PinDialogCNG::ResetPIN();
-					throw TechnicalException("Signing failed: PIN/card error.");
-				}
-			}
-
-			_log("Setting PIN to signer...");
-			signer->setPin(PinDialogCNG::GetPIN());
-
-			if (hashCount > 2 && !progressBarDlg) {
-				progressBarDlg = new CProgressBarDialog(hashCount);
-				hWndPB = progressBarDlg->Create(::GetActiveWindow(), 0);
-				progressBarDlg->ShowWindow(SW_SHOWNORMAL);
-				SendNotifyMessage(hWndPB, WM_UPDATE_PROGRESS, -1, 0);
-			}
-			currentHash++;
-			if (startTime == 0) {
-				time(&startTime);
-			}
-
-			_log("Signing...");
-			vector<unsigned char> result = signer->sign(currHashBin);
-			string resultString = BinaryUtils::bin2hex(result);
-
-			// append the signature to the comma separated signature list
-			_log("Appending signature '%s'.", resultString);
-			signatures += (signatures.length() ? "," + resultString : resultString);
-
-			// get the next hash string (or "" if nothing is left).
-			_log("Getting next hash, hashPos=%d...", hashPos);
-			currHash = getNextHash(hashString, hashPos, ",");
-
-			// update progress bar
-			if (progressBarDlg && hWndPB && !cancelSigning) {
-				SendNotifyMessage(hWndPB, WM_UPDATE_PROGRESS, 0, 0);
-			}
-			// process pending Windows messages
-			processMessages();
+			infoString = W2A_CP(info.bstrVal, CP_UTF8);
 		}
 
-		PinDialogCNG::ResetPIN();
-
-		if (cancelSigning) {
-			_log("CNG mass signing failed, user canceled while signing hash %d of %d.", currentHash, hashCount);
-			throw UserCancelledException("Signing was cancelled");
+		vector<vector<unsigned char>> signatures = batchSigner.sign(hashList, infoString);
+		string signaturesHex;
+		vector<vector<unsigned char>>::iterator sig = signatures.begin();
+		while (sig != signatures.end()) {
+			string signatureHex = BinaryUtils::bin2hex(*sig);
+			signaturesHex += (signaturesHex.length() ? "," + signatureHex : signatureHex);
+			sig = next(sig);
 		}
 
-		_log("%d hashes signed in %d seconds.", currentHash, (int)difftime(time(NULL), startTime));
-		if (progressBarDlg) {
-			if (progressBarDlg->IsWindow())
-				progressBarDlg->DestroyWindow();
-			delete progressBarDlg;
-			progressBarDlg = NULL;
-		}
-
-		_log("All signatures: '%s'", signatures.c_str());
-
-		*signature = _bstr_t(signatures.c_str()).Detach();
+		*signature = _bstr_t(signaturesHex.c_str()).Detach();
 
 		clearErrors();
 		_log("Signing ended");
@@ -293,15 +180,6 @@ STDMETHODIMP CEstEIDIEPluginBHO::sign(BSTR id, BSTR hashhex, BSTR _language, VAR
 	catch (const BaseException &e) {
 		_log("Exception caught during signing: %s", e.what());
 		setError(e);
-
-		PinDialogCNG::ResetPIN();
-		if (progressBarDlg) {
-			if (progressBarDlg->IsWindow())
-				progressBarDlg->DestroyWindow();
-			delete progressBarDlg;
-			progressBarDlg = NULL;
-		}
-
 		return Error(errorMessage.c_str());
 	}
 }
@@ -316,36 +194,4 @@ void CEstEIDIEPluginBHO::setError(const BaseException &exception) {
 	errorCode = exception.toInt();
 	errorMessage.assign(exception.what());
 	_log("Set error: %s (HEX %Xh, DEC %u)", errorMessage.c_str(), errorCode, errorCode);
-}
-
-std::string CEstEIDIEPluginBHO::getNextHash(std::string allHashes, int& position, char* separator)
-{
-  std::string result("");
-  bool found = false;
-
-  // initialize search
-  const char* str = allHashes.c_str();
-  str += position;
-
-  // skip separator in the beginning of search
-  if (*str == *separator)
-  {
-    str++;
-    position++;
-  }
-
-  // store the current position (beginning of substring)
-  const char *begin = str;
-
-  // while separator not found and not at end of string..
-  while (*str != *separator && *str)
-  {
-    // ..go forward in the string.
-    str++;
-    position++;
-  }
-
-  // return what we've got, which is either empty string or a hash string
-  result = std::string(begin, str);
-  return result;
 }

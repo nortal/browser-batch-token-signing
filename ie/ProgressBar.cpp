@@ -16,69 +16,118 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "resource.h"
-#include <atlbase.h>
-#include <atlhost.h>
-#include <atlstr.h>
-#include <atlctl.h>
 #include <string>
 #include "Labels.h"
 #include "ProgressBar.h"
+#include "ProgressBarResource.h"
 
-using namespace ATL;
+DWORD WINAPI ProgressBar::DialogThreadFunction(LPVOID lpParam)
+{
+	ProgressBar* progressBar = (ProgressBar*)lpParam;
 
-extern bool cancelSigning; // located in EstEIDIEPluginBHO.cpp
+	HMODULE hModule = ATL::_AtlBaseModule.GetModuleInstance();
+	HWND hwndDlg = CreateDialogParam(hModule, MAKEINTRESOURCE(IDD_PROGRESS_BAR_DIALOG), 0, DlgProc, (LPARAM)progressBar);
+	progressBar->initializeDialogHandle(hwndDlg);
 
-LRESULT CProgressBarDialog::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
-  CAxDialogImpl<CProgressBarDialog>::OnInitDialog(uMsg, wParam, lParam, bHandled);
-  ATLVERIFY(CenterWindow());
-  
-  ::SetWindowText(m_hWnd, Labels::l10n.get("mass signing").c_str());
+	ShowWindow(hwndDlg, SW_SHOWNORMAL);
 
-  // Set progress bar range. LOWORD contains the min value, HIWORD the max value.
-  LPARAM range = MAKELONG(0, m_numberOfItems);
-  ::SendDlgItemMessage(m_hWnd, IDC_PROGRESS_BAR, PBM_SETRANGE, 0, range);
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0) > 0)
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 
-  // Set progress bar step size to 1
-  ::SendDlgItemMessage(m_hWnd, IDC_PROGRESS_BAR, PBM_SETSTEP, 1, 0);
-
-  // make the window topmost and set focus to it
-  SetForegroundWindow(m_hWnd);
-  SetDlgItemText(IDCANCEL, Labels::l10n.get("cancel").c_str());
-  GotoDlgCtrl(GetDlgItem(IDCANCEL));
-
-  bHandled = TRUE;
-  return FALSE; //Focus is set manually
+	return 0;
 }
 
-LRESULT CProgressBarDialog::OnUpdateProgress(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+ProgressBar::ProgressBar(int numberOfItems)
+{
+	m_numberOfItems = numberOfItems;
+	m_currentItem = 0;
+	m_shouldCancel = false;
 
-  if (wParam >= 0 && m_currentItem < m_numberOfItems) {
-    m_currentItem++;
-  }
-  updateProgressBarMessage();
-  updateProgressBar();
+	m_initializedEvent = CreateEvent(NULL, TRUE, FALSE, TEXT("InitializedEvent"));
 
-  bHandled = TRUE;
-  return 0;
+	DWORD threadId;
+	CreateThread(
+		NULL,
+		0,
+		&DialogThreadFunction,
+		(LPVOID)this,
+		0,
+		&threadId
+	);
+
+	// Wait until window is initialized so that messages can be sent to it
+	WaitForSingleObject(m_initializedEvent, INFINITE);
+	CloseHandle(m_initializedEvent);
 }
 
-LRESULT CProgressBarDialog::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
-  _log("User canceled while signing hash %d of %d.", m_currentItem, m_numberOfItems);
-  cancelSigning = true;
-  DestroyWindow();
-  return 0;
+ProgressBar::~ProgressBar()
+{
+	if (m_hwndDlg) {
+		EndDialog(m_hwndDlg, IDOK);
+		m_hwndDlg = NULL;
+	}
 }
 
-void CProgressBarDialog::updateProgressBarMessage() {
-  WCHAR buf[100] = { 0 };
-  wsprintf(buf, Labels::l10n.get("mass sign create").c_str(), m_currentItem, m_numberOfItems);
-  SetDlgItemText(IDC_PROGRESS_TEXT, buf);
-
-  Invalidate();
+void ProgressBar::initializeDialogHandle(HWND hwndDlg)
+{
+	m_hwndDlg = hwndDlg;
+	SetEvent(m_initializedEvent);
 }
 
-void CProgressBarDialog::updateProgressBar() {
-  ::SendDlgItemMessage(m_hWnd, IDC_PROGRESS_BAR, PBM_STEPIT, 0, 0);
-  SetDlgItemText(IDCANCEL, Labels::l10n.get("cancel").c_str());
+void ProgressBar::updateProgress() {
+
+	if (m_currentItem < m_numberOfItems) {
+		m_currentItem++;
+	}
+
+	WCHAR buf[100] = { 0 };
+	wsprintf(buf, Labels::l10n.get("batch sign create").c_str(), m_currentItem, m_numberOfItems);
+	SetDlgItemText(m_hwndDlg, IDC_PROGRESS_TEXT, buf);
+
+	SendDlgItemMessage(m_hwndDlg, IDC_PROGRESS_BAR, PBM_STEPIT, 0, 0);
+}
+
+bool ProgressBar::shouldCancel()
+{
+	return m_shouldCancel;
+}
+
+INT_PTR CALLBACK ProgressBar::DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_INITDIALOG:
+	{
+		ProgressBar* self = (ProgressBar*)lParam;
+		SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
+		SetWindowText(hwndDlg, Labels::l10n.get("batch signing").c_str());
+
+		// Set progress bar range. LOWORD contains the min value, HIWORD the max value.
+		LPARAM range = MAKELONG(0, self->m_numberOfItems);
+		SendDlgItemMessage(hwndDlg, IDC_PROGRESS_BAR, PBM_SETRANGE, 0, range);
+
+		// Set progress bar step size to 1
+		SendDlgItemMessage(hwndDlg, IDC_PROGRESS_BAR, PBM_SETSTEP, 1, 0);
+
+		SetDlgItemText(hwndDlg, IDCANCEL, Labels::l10n.get("cancel").c_str());
+
+		return TRUE;
+	}
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case IDCANCEL:
+			ProgressBar* self = (ProgressBar*)GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
+			self->m_shouldCancel = true;
+			BOOL result = EndDialog(hwndDlg, IDCANCEL);
+			PostQuitMessage(0);
+			return result;
+		}
+		return FALSE;
+	}
+	return FALSE;
 }

@@ -88,11 +88,11 @@ Labels::lstring Labels::get(const std::string &labelKey) const {
         T("Atlikuši mēģinājumi:"),
     } },
     { "incorrect PIN2", {
-        T("Vale PIN! "),
-        T("Incorrect PIN! "),
-        T("Неправильный PIN! "),
-        T("Neteisingas PIN! "),
-        T("Nepareizs PIN! "),
+        T("Vale PIN2! "),
+        T("Incorrect PIN2! "),
+        T("Неправильный PIN2! "),
+        T("Neteisingas PIN2! "),
+        T("Nepareizs PIN2! "),
     } },
     { "PIN2 blocked", {
         T("PIN2 blokeeritud, ei saa allkirjastada!"),
@@ -156,7 +156,21 @@ Labels::lstring Labels::get(const std::string &labelKey) const {
         T("Выбирая сертификат, я соглащаюсь с тем, что мое имя и личный код будут переданы представителю услуг."),
         T("Pasirinkdama(s) sertifikatą, aš sutinku, kad mano vardas, pavardė ir asmens kodas būtų perduoti e. paslaugos teikėjui."),
         T("Izvēloties sertifikātu, es apstiprinu, ka mans vārds un personas kods tiks nosūtīts pakalpojuma sniedzējam."),
-    } }
+    } },
+        { "batch signing", {
+        T("Massallkirjastamine"),
+        T("Batch signing"),
+        T("Batch signing"),
+        T("Batch signing"),
+        T("Batch signing"),
+    } },
+    { "batch sign create", {
+        T("Allkirja koostamine: %d / %d"),
+        T("Creating signature %d of %d"),
+        T("Creating signature %d of %d"),
+        T("Creating signature %d of %d"),
+        T("Creating signature %d of %d"),
+    } },
     };
     return labels.at(labelKey).at(selectedLanguage);
 }
