@@ -214,7 +214,14 @@ vector<vector<unsigned char>> BatchSigner::sign(string hashList, string info)
 	catch (const BaseException &e)
 	{
 		if (progressBar) {
+			bool shouldCancel = progressBar->shouldCancel();
 			delete progressBar;
+			
+			// Override any other error if user cancelled
+			if (shouldCancel)
+			{
+				throw UserCancelledException();
+			}
 		}
 		throw e;
 	}
