@@ -36,6 +36,9 @@ public:
 	void updateProgress();
 	bool shouldCancel();
 
+	void show();
+	void hide();
+
 private:
 	static DWORD WINAPI DialogThreadFunction(LPVOID lpParam);
 	static INT_PTR CALLBACK DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);

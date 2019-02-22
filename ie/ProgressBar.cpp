@@ -46,6 +46,7 @@ ProgressBar::ProgressBar(int numberOfItems)
 	m_numberOfItems = numberOfItems;
 	m_currentItem = 0;
 	m_shouldCancel = false;
+	m_hwndDlg = NULL;
 
 	m_initializedEvent = CreateEvent(NULL, TRUE, FALSE, TEXT("InitializedEvent"));
 
@@ -94,6 +95,20 @@ void ProgressBar::updateProgress() {
 bool ProgressBar::shouldCancel()
 {
 	return m_shouldCancel;
+}
+
+void ProgressBar::show()
+{
+	if (m_hwndDlg) {
+		ShowWindow(m_hwndDlg, SW_SHOWNORMAL);
+	}
+}
+
+void ProgressBar::hide()
+{
+	if (m_hwndDlg) {
+		ShowWindow(m_hwndDlg, SW_HIDE);
+	}
 }
 
 INT_PTR CALLBACK ProgressBar::DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)

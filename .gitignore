@@ -13,3 +13,5 @@ plugin-win.res
 *~
 /tmp
 /*.suo
+.vs
+*.user

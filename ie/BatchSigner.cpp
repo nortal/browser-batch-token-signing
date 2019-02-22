@@ -168,6 +168,7 @@ vector<vector<unsigned char>> BatchSigner::sign(string hashList, string info)
 				if (hashes.size() > 2)
 				{
 					progressBar = new ProgressBar(hashes.size());
+					signer->setProgressBar(progressBar);
 				}
 			}
 			else if (hash->size() != hashLength)

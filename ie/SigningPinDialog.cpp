@@ -38,7 +38,7 @@ INT_PTR CALLBACK SigningPinDialog::DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
 	{
 	case WM_INITDIALOG:
 	{
-		SigningPinDialog *self = (SigningPinDialog*)lParam;
+		SigningPinDialog* self = (SigningPinDialog*)lParam;
 		SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
 		SetDlgItemText(hwndDlg, IDC_MESSAGE, self->message.c_str());
 		SetDlgItemText(hwndDlg, IDC_LABEL, self->label.c_str());
@@ -61,12 +61,21 @@ INT_PTR CALLBACK SigningPinDialog::DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
 			size_t len = size_t(SendDlgItemMessage(hwndDlg, IDC_PIN_FIELD, EM_LINELENGTH, 0, 0));
 			std::wstring tmp(len + 1, 0);
 			GetDlgItemText(hwndDlg, IDC_PIN_FIELD, &tmp[0], tmp.size());
-			SigningPinDialog *self = (SigningPinDialog*)GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
+			SigningPinDialog* self = (SigningPinDialog*)GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
 			self->pin = std::string(tmp.cbegin(), tmp.cend());
 			return EndDialog(hwndDlg, IDOK);
 		}
 		case IDCANCEL:
 			return EndDialog(hwndDlg, IDCANCEL);
+		}
+		return FALSE;
+	case WM_CTLCOLORSTATIC:
+		if ((HWND)lParam == GetDlgItem(hwndDlg, IDC_MESSAGE))
+		{
+			SetTextColor((HDC)wParam, RGB(255, 0, 0));
+			SetBkMode((HDC)wParam, TRANSPARENT);
+			SigningPinDialog* self = (SigningPinDialog*)lParam;
+			return (INT_PTR)GetSysColorBrush(CTLCOLOR_DLG);
 		}
 		return FALSE;
 	}

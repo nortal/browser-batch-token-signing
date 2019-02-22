@@ -19,6 +19,7 @@
 #pragma once
 
 #include "stdafx.h"
+#include "ProgressBar.h"
 
 #include <string>
 #include <ncrypt.h>
@@ -42,9 +43,14 @@ public:
 		pin = _pin;
 	}
 
+	void setProgressBar(ProgressBar* _progressBar) {
+		progressBar = _progressBar;
+	}
+
 protected:
-	Signer(const std::vector<unsigned char> &_cert) : cert(_cert) {}
+	Signer(const std::vector<unsigned char> &_cert) : cert(_cert), progressBar(nullptr) {}
 
 	std::string pin;
 	std::vector<unsigned char> cert;
+	ProgressBar* progressBar;
 };
