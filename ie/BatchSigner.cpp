@@ -84,7 +84,7 @@ string askPin(Signer& signer, const vector<unsigned char>& hash) {
 	wstring label = Labels::l10n.get("sign PIN");
 	size_t start_pos = 0;
 	while ((start_pos = label.find(L"@PIN@", start_pos)) != std::string::npos) {
-		label.replace(start_pos, 5, L"PIN");
+		label.replace(start_pos, 5, L"PIN2");
 		start_pos += 3;
 	}
 
