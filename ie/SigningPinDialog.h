@@ -28,11 +28,12 @@
 class SigningPinDialog
 {
 public:
-	static std::string getPin(const std::wstring &label, const std::wstring &message, HWND pParent = NULL);
+	static std::string getPin(const std::wstring &label, const std::wstring &message, const std::wstring &title, HWND pParent = NULL);
 
 private:
 	SigningPinDialog() {}
 	static INT_PTR CALLBACK DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	std::wstring label, message;
+	std::wstring title;
 	std::string pin;
 };

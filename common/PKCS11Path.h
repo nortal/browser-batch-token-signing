@@ -30,5 +30,5 @@ public:
         std::string path;
         std::string authPINLabel, signPINLabel;
     };
-    static Params getPkcs11ModulePath();
+    static Params getPkcs11ModulePath(bool isBatchSigning);
 };

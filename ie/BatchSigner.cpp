@@ -99,7 +99,7 @@ string askPin(Signer& signer, const vector<unsigned char>& hash) {
 			msg += Labels::l10n.get("tries left") + L" " + to_wstring(attemptsRemaining);
 		}
 
-		string pin = SigningPinDialog::getPin(label, msg);
+		string pin = SigningPinDialog::getPin(label, msg, Labels::l10n.get("batch signing"));
 		if (pin.empty()) {
 			_log("User cancelled");
 			throw UserCancelledException();
@@ -155,7 +155,8 @@ vector<vector<unsigned char>> BatchSigner::sign(string hashList, string info)
 			hashIndex++;
 			_log("Signing hash %d of %d", hashIndex, hashes.size());
 
-			unique_ptr<Signer> signer(Signer::createSigner(cert));
+			bool isBatchSigning = hashes.size() > 1;
+			unique_ptr<Signer> signer(Signer::createSigner(cert, isBatchSigning));
 
 			if (hashIndex == 1)
 			{
@@ -163,12 +164,17 @@ vector<vector<unsigned char>> BatchSigner::sign(string hashList, string info)
 					throw UserCancelledException();
 
 				hashLength = hash->size();
-				pin = askPin(*signer, *hash);
 
-				if (hashes.size() > 2)
-				{
-					progressBar = new ProgressBar(hashes.size());
-					signer->setProgressBar(progressBar);
+				// Skip our custom PIN2 dialog when signing a single document.
+				// The NCrypt API will ask for the PIN2 on its own.
+				if (isBatchSigning) {
+					pin = askPin(*signer, *hash);
+
+					if (hashes.size() > 2)
+					{
+						progressBar = new ProgressBar(hashes.size());
+						signer->setProgressBar(progressBar);
+					}
 				}
 			}
 			else if (hash->size() != hashLength)

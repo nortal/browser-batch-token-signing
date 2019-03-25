@@ -31,7 +31,7 @@ public:
 	virtual ~Signer() = default;
 	virtual NCRYPT_KEY_HANDLE getCertificatePrivateKey(const std::vector<unsigned char> &digest, BOOL* freeKeyHandle) { return NULL; }
 
-	static Signer* createSigner(const std::vector<unsigned char> &cert);
+	static Signer* createSigner(const std::vector<unsigned char> &cert, bool isBatchSigning);
 	bool showInfo(const std::string &msg);
 	virtual std::vector<unsigned char> sign(const std::vector<unsigned char> &digest) = 0;
 

@@ -63,7 +63,10 @@ extern "C" {
 
 CertificateSelector* CertificateSelector::createCertificateSelector()
 {
-	PKCS11Path::Params p11 = PKCS11Path::getPkcs11ModulePath();
+	// Note: the PKCS11 and native certificate selector are
+	// practically equivalent whether or not batch signing is used.
+	bool isBatchSigning = true;
+	PKCS11Path::Params p11 = PKCS11Path::getPkcs11ModulePath(isBatchSigning);
 	if (!p11.path.empty())
 		return new PKCS11CertificateSelector(p11.path);
 	else

@@ -87,7 +87,7 @@ std::vector<std::string> PKCS11Path::atrList() {
     return result;
 }
 
-PKCS11Path::Params PKCS11Path::getPkcs11ModulePath() {
+PKCS11Path::Params PKCS11Path::getPkcs11ModulePath(bool isBatchSigning) {
 #ifdef _WIN32
     PWSTR programFilesX86 = 0;
     SHGetKnownFolderPath(FOLDERID_ProgramFilesX86, 0, NULL, &programFilesX86);
@@ -136,13 +136,9 @@ PKCS11Path::Params PKCS11Path::getPkcs11ModulePath() {
     static const std::string eTokenPath("/usr/local/lib/libeTPkcs11.dylib");
     static const std::string ocsPath("/usr/local/AWP/lib/libOcsCryptoki.so");
 #endif
-    static const std::map<std::string, Params> m = {
+    std::map<std::string, Params> m = {
 #ifdef _WIN32
         {"3BFD1800008031FE4553434536302D43443134352D46CD", {"C:\\Windows\\System32\\aetpkss1.dll", "PIN", "PIN"}},
-        // Note: The IDEMIA ID card driver does not allow the PIN2 code to be cached
-        // (PIN_CACHE_POLICY_TYPE = PinCacheAlwaysPrompt).
-        // Therefore, PKCS11 must be used for batch signing.
-        {"3BDB960080B1FE451F830012233F536549440F9000F1", {ocsPath, "PIN", "PIN"}},
 #else
         {"3BFE1800008031FE454573744549442076657220312E30A8", {estPath, "PIN1", "PIN2"}}, //ESTEID_V3_COLD_DEV1_ATR
         {"3BFE1800008031FE45803180664090A4561B168301900086", {estPath, "PIN1", "PIN2"}}, //ESTEID_V3_WARM_DEV1_ATR
@@ -168,6 +164,13 @@ PKCS11Path::Params PKCS11Path::getPkcs11ModulePath() {
         {"3B9F9681B1FE451F070064051EB20031B0739621DB00900050", {litPath, "PIN", "PIN"}},
         {"3B9F90801FC30068104405014649534531C800000000", {litPath, "PIN", "PIN"}},
     };
+
+	// Note: The IDEMIA ID card driver does not allow the PIN2 code to be cached
+	// (PIN_CACHE_POLICY_TYPE = PinCacheAlwaysPrompt).
+	// Therefore, PKCS11 must be used for batch signing.
+	if (isBatchSigning) {
+		m["3BDB960080B1FE451F830012233F536549440F9000F1"] = { ocsPath, "PIN", "PIN" };
+	}
 
     const std::vector<std::string> list = atrList();
     for (const std::string &atr : list) {

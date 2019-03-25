@@ -26,8 +26,8 @@
 
 using namespace std;
 
-Signer * Signer::createSigner(const vector<unsigned char> &cert){
-	PKCS11Path::Params p11 = PKCS11Path::getPkcs11ModulePath();
+Signer * Signer::createSigner(const vector<unsigned char> &cert, bool isBatchSigning){
+	PKCS11Path::Params p11 = PKCS11Path::getPkcs11ModulePath(isBatchSigning);
 	if (!p11.path.empty()) {
 		return new Pkcs11Signer(p11.path, cert);
 	}

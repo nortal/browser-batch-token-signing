@@ -33,7 +33,7 @@ Pkcs11Signer::Pkcs11Signer(const string &pkcs11ModulePath, const vector<unsigned
 {
 }
 
-void replace_pin_placeholder(wstring label, wstring replaceWith)
+void replace_pin_placeholder(wstring& label, const wstring& replaceWith)
 {
 	size_t start_pos = 0;
 	while ((start_pos = label.find(L"@PIN@", start_pos)) != std::string::npos) {
@@ -98,7 +98,7 @@ vector<unsigned char> Pkcs11Signer::sign(const vector<unsigned char> &digest)
 				if (progressBar) {
 					progressBar->hide();
 				}
-				pin = SigningPinDialog::getPin(label, msg);
+				pin = SigningPinDialog::getPin(label, msg, Labels::l10n.get("batch signing"));
 				if (pin.empty()) {
 					_log("User cancelled");
 					throw UserCancelledException();
